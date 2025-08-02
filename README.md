@@ -67,7 +67,8 @@ CoreFoundry nace como una plataforma extensible donde cada módulo (Inventario, 
 
    ```ini
    MONGODB_URI=mongodb://localhost:27017/corefoundry
-   NEXTAUTH_SECRET=una_clave_segura
+   AUTH_SECRET=una_clave_segura
+   JWT_SECRET=una_clave_segura
    ```
 
 5. Inicia la aplicación:
