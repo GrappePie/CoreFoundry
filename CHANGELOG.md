@@ -25,4 +25,24 @@ All notable changes to this project will be documented in this file.
 - `@tanstack/react-query`
 - `next-auth`
 
+## [0.3.0] - 2025-08-03
+
+### Added
+- AuthMenu component for displaying user options
+- ChatWidget component for real-time chat integration
+- InfiniteScroller component for lazy loading content
+- Static pages: Privacy (`/privacy`), Terms (`/terms`), Profile (`/profile`)
+- Providers component for wrapping app with authentication and data fetching contexts
+- Custom hook `useAuth` for accessing authentication state
+- MongoDB connection utility (`lib/mongodb.ts`)
+- Mongoose User model (`models/User.ts`)
+- Landing page with hero section, feature highlights, modules showcase, subscription plans, business examples, and FAQ accordion
+
+### Changed
+- Updated global layout to include Providers and AuthMenu
+- Improved styling and responsiveness for authentication forms and overall UI
+
+### Dependencies
+- `mongoose`
+
 *For more details, see individual commit messages.*
