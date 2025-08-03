@@ -77,7 +77,19 @@ export default function AuthForm({ formType }: AuthFormProps) {
             : 'Registrarse'}
         </button>
       </div>
-      {error && <div className="text-red-500 text-sm mt-4">{error.message}</div>}
+      {error && (() => {
+        const issues = (error as any).issues;
+        if (Array.isArray(issues)) {
+          return (
+            <ul className="text-red-500 text-sm mt-4 list-disc list-inside">
+              {issues.map((issue: any, idx: number) => (
+                <li key={idx}>{issue.path.join('.')}: {issue.message}</li>
+              ))}
+            </ul>
+          );
+        }
+        return <div className="text-red-500 text-sm mt-4">{error.message}</div>;
+      })()}
       <div className="mt-4 text-center">
         {formType === 'login' ? (
           <Link href="/register" className="text-blue-500 hover:underline text-sm">

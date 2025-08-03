@@ -20,8 +20,10 @@ const loginUser = async (credentials: Credentials) => {
   });
 
   if (!res.ok) {
-    const error = await res.json();
-    throw new Error(error.message);
+    const errorBody = await res.json();
+    const err = new Error(errorBody.message);
+    (err as any).issues = errorBody.errors;
+    throw err;
   }
 
   return res.json();
@@ -38,8 +40,10 @@ const registerUser = async (credentials: Credentials) => {
   });
 
   if (!res.ok) {
-    const error = await res.json();
-    throw new Error(error.message);
+    const errorBody = await res.json();
+    const err = new Error(errorBody.message);
+    (err as any).issues = errorBody.errors;
+    throw err;
   }
 
   return res.json();

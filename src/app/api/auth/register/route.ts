@@ -3,19 +3,26 @@ import dbConnect from '@/lib/mongodb';
 import User from '@/models/User';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import { z } from 'zod';
+
+const registerSchema = z.object({
+  email: z.email(),
+  password: z.string().min(6),
+});
 
 export async function POST(req: Request) {
   await dbConnect();
 
   try {
-    const { email, password } = await req.json();
-
-    if (!password || password.length < 6) {
+    const body = await req.json();
+    const parse = registerSchema.safeParse(body);
+    if (!parse.success) {
       return NextResponse.json(
-        { message: 'Password must be at least 6 characters long' },
+        { message: 'Validation error', errors: parse.error.issues },
         { status: 400 }
       );
     }
+    const { email, password } = parse.data;
 
     const userExists = await User.findOne({ email });
 

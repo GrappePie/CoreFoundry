@@ -45,4 +45,27 @@ All notable changes to this project will be documented in this file.
 ### Dependencies
 - `mongoose`
 
+## [0.4.0] - 2025-08-03
+
+### Added
+- Enhanced Mongoose models with timestamps, soft-delete and pagination:
+  - User model: added fields (`role`, `subscription`, `modulesEnabled`, `lastLogin`, `emailVerified`, `status`, `subscriptionStart`, `subscriptionEnd`, `deletedAt`), password hashing hook, `comparePassword` method, `toJSON` transform, `mongoose-paginate-v2` plugin and indexes.
+  - Module model: new schema with `ownerId`, `schema` (AJV validation), `endpoints`, `deletedAt`, timestamps, pagination plugin and indexes.
+  - ModuleLink model: new schema with `fromModule`, `toModule`, `mappingRules` (AJV validation), `deletedAt`, timestamps, pagination plugin and indexes.
+  - AuditLog model: new schema with `userId`, `action`, `payload`, `result`, `ipAddress`, `userAgent`, `moduleId`, `endpoint`, `errorCode`, `errorStack`, timestamps, pagination plugin, indexes and TTL index (expire after 30 days).
+- JSON schema validation in models using Ajv for `Module.schema` and `ModuleLink.mappingRules`.
+- Install and configure `mongoose-paginate-v2` for all models.
+- Soft-delete support via `deletedAt` fields and queries excluding soft-deleted documents.
+- Refactored authentication endpoints with Zod (fail-fast validation):
+  - Added `zod` schemas in `/api/auth/register` and `/api/auth/login`, returning structured `issues` on errors.
+  - Installed `zod` and updated response handling to use `error.issues`.
+- Updated `useAuth` hook to capture and propagate validation issues to client.
+- Updated `AuthForm` component to display Zod validation errors.
+
+### Dependencies
+- `bcryptjs` and `@types/bcryptjs` for password hashing
+- `ajv` for JSON schema validation
+- `mongoose-paginate-v2` for pagination
+- `zod` for request validation
+
 *For more details, see individual commit messages.*

@@ -1,4 +1,5 @@
 import mongoose, { Schema, Document, models } from 'mongoose';
+import mongoosePaginate from 'mongoose-paginate-v2';
 
 export interface IAuditLog extends Document {
   userId: mongoose.Types.ObjectId;
@@ -34,5 +35,10 @@ const AuditLogSchema: Schema = new Schema({
 AuditLogSchema.index({ userId: 1 });
 AuditLogSchema.index({ timestamp: -1 });
 
-export default models.AuditLog || mongoose.model<IAuditLog>('AuditLog', AuditLogSchema);
+// Pagination plugin
+AuditLogSchema.plugin(mongoosePaginate);
 
+// TTL index to expire logs after 30 days
+AuditLogSchema.index({ createdAt: 1 }, { expireAfterSeconds: 60 * 60 * 24 * 30 });
+
+export default models.AuditLog || mongoose.model<IAuditLog>('AuditLog', AuditLogSchema);

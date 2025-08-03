@@ -3,12 +3,26 @@ import dbConnect from '@/lib/mongodb';
 import User from '@/models/User';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import { z } from 'zod';
+
+const loginSchema = z.object({
+  email: z.email(),
+  password: z.string().min(1),
+});
 
 export async function POST(req: Request) {
   await dbConnect();
 
   try {
-    const { email, password } = await req.json();
+    const body = await req.json();
+    const parse = loginSchema.safeParse(body);
+    if (!parse.success) {
+      return NextResponse.json(
+        { message: 'Validation error', errors: parse.error.issues },
+        { status: 400 }
+      );
+    }
+    const { email, password } = parse.data;
 
     const user = await User.findOne({ email }).select('+password');
 
