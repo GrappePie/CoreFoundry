@@ -9,6 +9,88 @@
 - Flujos de datos validados y comunicación entre módulos.  
 - Trazabilidad y auditoría de acciones con logs TTL (expireAfterSeconds de 30 días).
 
+## 📊 Arquitectura del Sistema
+
+```mermaid
+flowchart LR
+  subgraph Infraestructura
+    LB("Load Balancer / API Gateway")
+    Cache("Cache Redis")
+    Broker("Message Broker (RabbitMQ/Kafka)")
+    Monitoring("Monitoring: Prometheus/Grafana/Sentry")
+  end
+  subgraph Cliente
+    Browser("Navegador / UI React")
+  end
+  subgraph Servidor
+    NextJS("Next.js App Router + API")
+    AuthModule("Auth.js / NextAuth v5")
+    CoreModule("Módulo Central")
+    SubscriptionService("Servicio de Suscripciones")
+    ValidationService("Validación AJV")
+    AuditService("Servicio de Auditoría")
+    WS("WebSocket / Realtime")
+    subgraph Módulos
+      InventoryModule("Módulo Inventario")
+      SalesModule("Módulo Ventas")
+      ProductionModule("Módulo Producción")
+      BillingModule("Módulo Facturación")
+      LogisticsModule("Módulo Logística")
+      MoreModules("...más módulos")
+    end
+    OAuthGOOGLE("Google OAuth (próximamente)")
+  end
+  subgraph BaseDeDatos Central
+    CentralDB["MongoDB Central"]
+  end
+  subgraph BasesDeDatosDeMódulos
+    InvDB["MongoDB Inventario"]
+    SalesDB["MongoDB Ventas"]
+    ProdDB["MongoDB Producción"]
+    BillDB["MongoDB Facturación"]
+    LogiDB["MongoDB Logística"]
+  end
+
+  Browser <-->|HTTPS| LB
+  LB <--> Cache
+  Cache <--> NextJS
+  LB <--> NextJS
+  NextJS <--> AuthModule
+  AuthModule <--> CentralDB
+  AuthModule <--> OAuthGOOGLE
+  NextJS <--> CoreModule
+  CoreModule <--> SubscriptionService
+  SubscriptionService <--> CentralDB
+  CoreModule <--> ValidationService
+  ValidationService <--> CentralDB
+  CoreModule <--> AuditService
+  AuditService <--> CentralDB
+  Browser <-->|WS| LB
+  LB <-->|WS| WS
+  WS <--> CoreModule
+  CoreModule <--> InventoryModule
+  CoreModule <--> SalesModule
+  CoreModule <--> ProductionModule
+  CoreModule <--> BillingModule
+  CoreModule <--> LogisticsModule
+  InventoryModule <--> InvDB
+  SalesModule <--> SalesDB
+  ProductionModule <--> ProdDB
+  BillingModule <--> BillDB
+  LogisticsModule <--> LogiDB
+  CoreModule <--> Broker
+  InventoryModule <--> Broker
+  SalesModule <--> Broker
+  ProductionModule <--> Broker
+  Broker <--> CoreModule
+  Monitoring <--> LB
+  Monitoring <--> NextJS
+  Monitoring <--> AuthModule
+  Monitoring <--> CoreModule
+  Monitoring <--> Broker
+  Monitoring <--> Cache
+```
+
 ---
 
 ## 🔑 Gestión de Usuarios y Subscripciones
