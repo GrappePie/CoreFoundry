@@ -96,6 +96,7 @@ El **Módulo Central** gestiona:
    ```ini
    MONGODB_URI=mongodb://localhost:27017/corefoundry
    NEXTAUTH_SECRET=tu_clave_segura
+   JWT_SECRET=tu_clave_segura
    ```
 
 5. Arranca en modo desarrollo:
