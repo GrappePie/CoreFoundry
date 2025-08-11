@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### Added
+- AGENTS guideline to record significant changes in `CHANGELOG.md`.
+
 ## [0.5.2] - 2025-08-11
 
 ### Added
