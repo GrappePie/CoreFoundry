@@ -26,8 +26,10 @@ describe('moduleOrchestrator service', () => {
       { _id: '2', endpoints: { rest: 'http://m2' }, lastHandshake: new Date() },
     ];
     (Module as any).find = () => ({
-      skip: (s: number) => ({
-        limit: (l: number) => Promise.resolve(modules.slice(s, s + l)),
+      sort: () => ({
+        skip: (s: number) => ({
+          limit: (l: number) => Promise.resolve(modules.slice(s, s + l)),
+        }),
       }),
     });
     const updated: string[] = [];
@@ -48,8 +50,10 @@ describe('moduleOrchestrator service', () => {
       { _id: '2', endpoints: { rest: 'http://m2' }, lastHandshake: new Date() },
     ];
     (Module as any).find = () => ({
-      skip: (s: number) => ({
-        limit: (l: number) => Promise.resolve(modules.slice(s, s + l)),
+      sort: () => ({
+        skip: (s: number) => ({
+          limit: (l: number) => Promise.resolve(modules.slice(s, s + l)),
+        }),
       }),
     });
     const updated: string[] = [];
@@ -80,8 +84,10 @@ describe('moduleOrchestrator service', () => {
       },
     ];
     (Module as any).find = () => ({
-      skip: (s: number) => ({
-        limit: (l: number) => Promise.resolve(modules.slice(s, s + l)),
+      sort: () => ({
+        skip: (s: number) => ({
+          limit: (l: number) => Promise.resolve(modules.slice(s, s + l)),
+        }),
       }),
     });
     const updated: Array<{ id: string; status: string }> = [];
@@ -109,8 +115,10 @@ describe('moduleOrchestrator service', () => {
       },
     ];
     (Module as any).find = () => ({
-      skip: (s: number) => ({
-        limit: (l: number) => Promise.resolve(modules.slice(s, s + l)),
+      sort: () => ({
+        skip: (s: number) => ({
+          limit: (l: number) => Promise.resolve(modules.slice(s, s + l)),
+        }),
       }),
     });
     (Module as any).findByIdAndUpdate = async () => {
@@ -139,8 +147,10 @@ describe('moduleOrchestrator service', () => {
       lastHandshake: new Date(),
     }));
     (Module as any).find = () => ({
-      skip: (s: number) => ({
-        limit: (l: number) => Promise.resolve(modules.slice(s, s + l)),
+      sort: () => ({
+        skip: (s: number) => ({
+          limit: (l: number) => Promise.resolve(modules.slice(s, s + l)),
+        }),
       }),
     });
     (Module as any).findByIdAndUpdate = async () => {};
@@ -167,11 +177,13 @@ describe('moduleOrchestrator service', () => {
     }));
     let findCalls = 0;
     (Module as any).find = () => ({
-      skip: (s: number) => ({
-        limit: (l: number) => {
-          findCalls++;
-          return Promise.resolve(modules.slice(s, s + l));
-        },
+      sort: () => ({
+        skip: (s: number) => ({
+          limit: (l: number) => {
+            findCalls++;
+            return Promise.resolve(modules.slice(s, s + l));
+          },
+        }),
       }),
     });
     const updated: string[] = [];
@@ -186,13 +198,45 @@ describe('moduleOrchestrator service', () => {
     assert.equal(updated.length, modules.length);
   });
 
+  it('sorts modules by _id for stable pagination', async () => {
+    const modules = [
+      { _id: 'b', endpoints: { rest: 'http://m2' }, lastHandshake: new Date() },
+      { _id: 'a', endpoints: { rest: 'http://m1' }, lastHandshake: new Date() },
+      { _id: 'c', endpoints: { rest: 'http://m3' }, lastHandshake: new Date() },
+    ];
+    let sortOptions: any = null;
+    (Module as any).find = () => ({
+      sort: (s: any) => {
+        sortOptions = s;
+        modules.sort((x, y) => String(x._id).localeCompare(String(y._id)));
+        return {
+          skip: (sk: number) => ({
+            limit: (l: number) => Promise.resolve(modules.slice(sk, sk + l)),
+          }),
+        };
+      },
+    });
+    const processed: string[] = [];
+    (Module as any).findByIdAndUpdate = async (id: string) => {
+      processed.push(String(id));
+    };
+    global.fetch = async () => ({ ok: true }) as any;
+
+    await checkModules();
+
+    assert.deepEqual(sortOptions, { _id: 1 });
+    assert.deepEqual(processed, ['a', 'b', 'c']);
+  });
+
   it('aborts ping after pingTimeoutMs', async () => {
     const modules = [
       { _id: '1', endpoints: { rest: 'http://m1' }, lastHandshake: new Date() },
     ];
     (Module as any).find = () => ({
-      skip: (s: number) => ({
-        limit: (l: number) => Promise.resolve(modules.slice(s, s + l)),
+      sort: () => ({
+        skip: (s: number) => ({
+          limit: (l: number) => Promise.resolve(modules.slice(s, s + l)),
+        }),
       }),
     });
     (Module as any).findByIdAndUpdate = async () => {};
@@ -217,8 +261,10 @@ describe('moduleOrchestrator service', () => {
       { _id: '1', endpoints: { rest: 'http://m1' }, lastHandshake: new Date() },
     ];
     (Module as any).find = () => ({
-      skip: (s: number) => ({
-        limit: (l: number) => Promise.resolve(modules.slice(s, s + l)),
+      sort: () => ({
+        skip: (s: number) => ({
+          limit: (l: number) => Promise.resolve(modules.slice(s, s + l)),
+        }),
       }),
     });
     (Module as any).findByIdAndUpdate = async () => {};

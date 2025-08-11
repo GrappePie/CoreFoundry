@@ -15,15 +15,18 @@ const emitted: Array<{ event: string; moduleId: string }> = [];
 let modules: any[] = [];
 
 (Module as any).find = (filter: any = {}) => ({
-  skip: (s: number) => ({
-    limit: (l: number) =>
-      Promise.resolve(
-        modules
-          .filter((m) =>
-            filter.deletedAt?.$exists === false ? !('deletedAt' in m) : true
-          )
-          .slice(s, s + l)
-      ),
+  sort: () => ({
+    skip: (s: number) => ({
+      limit: (l: number) =>
+        Promise.resolve(
+          modules
+            .filter((m) =>
+              filter.deletedAt?.$exists === false ? !('deletedAt' in m) : true
+            )
+            .sort((a, b) => String(a._id).localeCompare(String(b._id)))
+            .slice(s, s + l)
+        ),
+    }),
   }),
 });
 (Module as any).findByIdAndUpdate = async (id: any, update: any) => {

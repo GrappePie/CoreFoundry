@@ -19,6 +19,7 @@ All notable changes to this project will be documented in this file.
 - Module orchestrator marks modules offline and skips ping when their `rest` endpoint URL is invalid.
 - Module orchestrator publishes `module.offline` when ping URL is invalid.
 - Module orchestrator runs sequentially, avoiding overlapping cycles and resetting its state on errors.
+- Module orchestrator sorts modules by `_id` before pagination to ensure stable ordering.
 
 ## [0.5.2] - 2025-08-11
 

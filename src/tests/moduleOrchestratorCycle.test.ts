@@ -30,15 +30,17 @@ describe('module orchestrator cycle control', () => {
     let maxRunning = 0;
     let calls = 0;
     (Module as any).find = () => ({
-      skip: (_s: number) => ({
-        limit: async (_l: number) => {
-          running++;
-          maxRunning = Math.max(maxRunning, running);
-          await wait(80);
-          running--;
-          calls++;
-          return [];
-        },
+      sort: () => ({
+        skip: (_s: number) => ({
+          limit: async (_l: number) => {
+            running++;
+            maxRunning = Math.max(maxRunning, running);
+            await wait(80);
+            running--;
+            calls++;
+            return [];
+          },
+        }),
       }),
     });
 
@@ -56,12 +58,14 @@ describe('module orchestrator cycle control', () => {
   it('recovers and schedules new cycle after errors', async () => {
     let calls = 0;
     (Module as any).find = () => ({
-      skip: (_s: number) => ({
-        limit: async (_l: number) => {
-          calls++;
-          if (calls === 1) throw new Error('fail');
-          return [];
-        },
+      sort: () => ({
+        skip: (_s: number) => ({
+          limit: async (_l: number) => {
+            calls++;
+            if (calls === 1) throw new Error('fail');
+            return [];
+          },
+        }),
       }),
     });
 
@@ -78,12 +82,14 @@ describe('module orchestrator cycle control', () => {
   it('stops scheduling when stopped mid-cycle', async () => {
     let calls = 0;
     (Module as any).find = () => ({
-      skip: (_s: number) => ({
-        limit: async (_l: number) => {
-          calls++;
-          await wait(50);
-          return [];
-        },
+      sort: () => ({
+        skip: (_s: number) => ({
+          limit: async (_l: number) => {
+            calls++;
+            await wait(50);
+            return [];
+          },
+        }),
       }),
     });
 
@@ -108,8 +114,10 @@ describe('module orchestrator cycle control', () => {
         },
       ];
       (Module as any).find = () => ({
-        skip: (s: number) => ({
-          limit: async (_l: number) => modules.slice(s, s + _l),
+        sort: () => ({
+          skip: (s: number) => ({
+            limit: async (_l: number) => modules.slice(s, s + _l),
+          }),
         }),
       });
       (Module as any).findByIdAndUpdate = async (id: any, update: any) => {
@@ -145,8 +153,10 @@ describe('module orchestrator cycle control', () => {
         },
       ];
       (Module as any).find = () => ({
-        skip: (s: number) => ({
-          limit: async (_l: number) => modules.slice(s, s + _l),
+        sort: () => ({
+          skip: (s: number) => ({
+            limit: async (_l: number) => modules.slice(s, s + _l),
+          }),
         }),
       });
       (Module as any).findByIdAndUpdate = async (id: any, update: any) => {
