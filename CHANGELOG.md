@@ -8,10 +8,12 @@ All notable changes to this project will be documented in this file.
 - AGENTS guideline to record significant changes in `CHANGELOG.md`.
 - Module orchestrator service to monitor registered modules and prune stale entries.
 - Module orchestrator now emits `module.online`, `module.offline`, and `module.removed` events with corresponding logs.
+- Centralized logging utility.
 
 ### Changed
 - Module orchestrator now pings modules in parallel before pruning.
 - Module orchestrator pings now have a timeout using `AbortController` to mark modules offline on timeout.
+- Module orchestrator uses the logging utility instead of `console`.
 
 ### Fixed
 - Module orchestrator marks modules offline and skips ping when their `rest` endpoint URL is invalid.
