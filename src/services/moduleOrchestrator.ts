@@ -8,6 +8,7 @@ let isRunning = false;
 export interface OrchestratorOptions {
   intervalMs?: number;
   pruneOfflineMs?: number;
+  maxConcurrentPings?: number;
 }
 
 /**
@@ -16,44 +17,58 @@ export interface OrchestratorOptions {
  */
 export async function checkModules(
   pruneOfflineMs?: number,
-  pingTimeoutMs = 5_000
+  pingTimeoutMs = 5_000,
+  maxConcurrentPings = 10
 ) {
   const modules = await Module.find({ deletedAt: { $exists: false } });
   const now = Date.now();
 
-  const results = await Promise.all(
-    modules.map(async (mod) => {
-      let pingUrl: string;
+  async function pingModule(mod: any) {
+    let pingUrl: string;
+    try {
+      pingUrl = new URL('/ping', mod.endpoints.rest).toString();
+    } catch (err) {
+      logger.error('Invalid ping URL for module', mod._id, err);
+      await Module.findByIdAndUpdate(mod._id, { status: 'offline' });
       try {
-        pingUrl = new URL('/ping', mod.endpoints.rest).toString();
+        await eventBus.publish('module.offline', { moduleId: String(mod._id) });
       } catch (err) {
-        logger.error('Invalid ping URL for module', mod._id, err);
-        await Module.findByIdAndUpdate(mod._id, { status: 'offline' });
-        try {
-          await eventBus.publish('module.offline', { moduleId: String(mod._id) });
-        } catch (err) {
-          logger.error('Failed to publish module.offline event', err);
-        }
-        return null;
+        logger.error('Failed to publish module.offline event', err);
       }
-      let online = false;
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), pingTimeoutMs);
-      try {
-        const res = await fetch(pingUrl, { signal: controller.signal });
-        online = res.ok;
-      } catch (err) {
-        if (err instanceof Error && err.name === 'AbortError') {
-          online = false;
-        } else {
-          online = false;
-        }
-      } finally {
-        clearTimeout(timeout);
+      return null;
+    }
+    let online = false;
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), pingTimeoutMs);
+    try {
+      const res = await fetch(pingUrl, { signal: controller.signal });
+      online = res.ok;
+    } catch (err) {
+      if (err instanceof Error && err.name === 'AbortError') {
+        online = false;
+      } else {
+        online = false;
       }
-      return { mod, online };
-    })
+    } finally {
+      clearTimeout(timeout);
+    }
+    return { mod, online };
+  }
+
+  const results: Array<{ mod: any; online: boolean } | null> = [];
+  let index = 0;
+  async function worker() {
+    while (true) {
+      const mod = modules[index++];
+      if (!mod) break;
+      results.push(await pingModule(mod));
+    }
+  }
+  const workers = Array.from(
+    { length: Math.min(maxConcurrentPings, modules.length) },
+    () => worker()
   );
+  await Promise.all(workers);
 
   for (const result of results) {
     if (!result) continue;
@@ -114,14 +129,14 @@ export async function checkModules(
  * Starts periodic module orchestration.
  */
 export function startModuleOrchestrator(options: OrchestratorOptions = {}) {
-  const { intervalMs = 60_000, pruneOfflineMs } = options;
+  const { intervalMs = 60_000, pruneOfflineMs, maxConcurrentPings } = options;
   if (timer) return;
 
   const run = async () => {
     if (isRunning) return;
     isRunning = true;
     try {
-      await checkModules(pruneOfflineMs);
+      await checkModules(pruneOfflineMs, undefined, maxConcurrentPings);
     } catch (err) {
       logger.error('Module orchestration error', err);
     } finally {

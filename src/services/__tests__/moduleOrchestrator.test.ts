@@ -57,4 +57,27 @@ describe('moduleOrchestrator service', () => {
     assert.deepEqual(deleted, ['1']);
     assert.deepEqual(updated, ['2']);
   });
+
+  it('respects maxConcurrentPings limit', async () => {
+    const modules = Array.from({ length: 20 }, (_, i) => ({
+      _id: String(i),
+      endpoints: { rest: `http://m${i}` },
+      lastHandshake: new Date(),
+    }));
+    (Module as any).find = async () => modules;
+    (Module as any).findByIdAndUpdate = async () => {};
+    let active = 0;
+    let maxActive = 0;
+    global.fetch = async () => {
+      active++;
+      maxActive = Math.max(maxActive, active);
+      await new Promise((r) => setTimeout(r, 5));
+      active--;
+      return { ok: true } as any;
+    };
+
+    await checkModules(undefined, undefined, 5);
+
+    assert.ok(maxActive <= 5);
+  });
 });
