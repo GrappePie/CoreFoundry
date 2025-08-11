@@ -12,6 +12,10 @@ export interface IModule extends Document {
     rest: string;
     ws?: string;
   };
+  /**
+   * Scopes granted to this module for API authorization checks.
+   */
+  scopes: string[];
 }
 
 const ModuleSchema: Schema = new Schema({
@@ -24,6 +28,7 @@ const ModuleSchema: Schema = new Schema({
     rest: { type: String, required: true },
     ws: { type: String },
   },
+  scopes: { type: [String], default: [] },
   deletedAt: Date,
 }, { timestamps: true });
 
