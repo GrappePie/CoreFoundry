@@ -1,14 +1,17 @@
 # module-cli
 
-CLI para crear la estructura básica de un módulo.
+CLI para crear y gestionar módulos.
 
-## Uso
+## Instalación
 
 ```bash
-npx module-cli init <nombre>
+npm install --save-dev @core/module-cli
 ```
 
-Esto genera:
+## Comandos
 
-- `module.manifest.json` con metadatos base.
-- Directorios `api/`, `schemas/`, `events/` y `tests/`.
+```bash
+npx module-cli create <nombre>      # genera un módulo desde la plantilla
+npx module-cli validate [directorio] # valida el manifest
+npx module-cli test [directorio]     # ejecuta los tests
+```
