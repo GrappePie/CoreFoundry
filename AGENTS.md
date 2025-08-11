@@ -12,6 +12,7 @@ Este archivo contiene instrucciones para contribuciones en el repositorio **Core
 2. Verifica el estilo: `npm run lint`.
 3. Ejecuta las pruebas: `npm test`.
 4. Documenta cambios en `docs/` y actualiza `README.md` si aplica.
+5. Registra cambios importantes en `CHANGELOG.md`.
 
 ## Convenciones
 - Usa mensajes de commit en modo imperativo y concisos.
