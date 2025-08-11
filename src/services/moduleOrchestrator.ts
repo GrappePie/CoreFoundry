@@ -11,7 +11,10 @@ export interface OrchestratorOptions {
  * Pings registered modules and updates their status.
  * Optionally removes modules that have been offline for longer than `pruneOfflineMs`.
  */
-export async function checkModules(pruneOfflineMs?: number) {
+export async function checkModules(
+  pruneOfflineMs?: number,
+  pingTimeoutMs = 5_000
+) {
   const modules = await Module.find();
   const now = Date.now();
 
@@ -19,11 +22,19 @@ export async function checkModules(pruneOfflineMs?: number) {
     modules.map(async (mod) => {
       const pingUrl = new URL('/ping', mod.endpoints.rest).toString();
       let online = false;
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), pingTimeoutMs);
       try {
-        const res = await fetch(pingUrl);
+        const res = await fetch(pingUrl, { signal: controller.signal });
         online = res.ok;
-      } catch {
-        online = false;
+      } catch (err) {
+        if (err instanceof Error && err.name === 'AbortError') {
+          online = false;
+        } else {
+          online = false;
+        }
+      } finally {
+        clearTimeout(timeout);
       }
       return { mod, online };
     })

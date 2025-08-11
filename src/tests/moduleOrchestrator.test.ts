@@ -15,6 +15,11 @@ const modules: any[] = [
     status: 'offline',
     lastHandshake: new Date(Date.now() - 40 * 24 * 60 * 60 * 1000),
   },
+  {
+    _id: '3',
+    endpoints: { rest: 'https://m3.local/api' },
+    status: 'offline',
+  },
 ];
 
 (Module as any).find = async () => modules;
@@ -28,19 +33,35 @@ const modules: any[] = [
   if (index !== -1) modules.splice(index, 1);
 };
 
-(global as any).fetch = async (url: string) => {
+(global as any).fetch = (url: string, { signal }: any = {}) => {
   if (String(url).includes('m1')) {
-    return { ok: true } as any;
+    return Promise.resolve({ ok: true } as any);
   }
-  return { ok: false } as any;
+  if (String(url).includes('m2')) {
+    return Promise.resolve({ ok: false } as any);
+  }
+  if (String(url).includes('m3')) {
+    return new Promise((_res, rej) => {
+      signal?.addEventListener('abort', () => {
+        const err = new Error('Aborted');
+        (err as any).name = 'AbortError';
+        rej(err);
+      });
+    });
+  }
+  return Promise.resolve({ ok: false } as any);
 };
 
 describe('moduleOrchestrator service', () => {
   it('updates module status and prunes long-term offline modules', async () => {
-    await checkModules(30 * 24 * 60 * 60 * 1000);
-    assert.equal(modules.length, 1);
-    assert.equal(modules[0]._id, '1');
-    assert.equal(modules[0].status, 'online');
-    assert(modules[0].lastHandshake instanceof Date);
+    await checkModules(30 * 24 * 60 * 60 * 1000, 50);
+    assert.equal(modules.length, 2);
+    const m1 = modules.find((m) => m._id === '1');
+    const m3 = modules.find((m) => m._id === '3');
+    assert(m1);
+    assert(m3);
+    assert.equal(m1.status, 'online');
+    assert(m1.lastHandshake instanceof Date);
+    assert.equal(m3.status, 'offline');
   });
 });
