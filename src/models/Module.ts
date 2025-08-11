@@ -12,29 +12,35 @@ export interface IModule extends Document {
     rest: string;
     ws?: string;
   };
+  /** Scopes granted to this module for API authorization checks. */
+  scopes: string[];
   status: 'online' | 'offline';
   lastHandshake?: Date;
   compatibleVersion: boolean;
 }
 
-const ModuleSchema: Schema = new Schema({
-  name: { type: String, required: true },
-  version: { type: String, required: true },
-  description: { type: String, default: '' },
-  ownerId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-  manifest: { type: Schema.Types.Mixed, required: true },
-  endpoints: {
-    rest: { type: String, required: true },
-    ws: { type: String },
+const ModuleSchema: Schema = new Schema(
+  {
+    name: { type: String, required: true },
+    version: { type: String, required: true },
+    description: { type: String, default: '' },
+    ownerId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+    manifest: { type: Schema.Types.Mixed, required: true },
+    endpoints: {
+      rest: { type: String, required: true },
+      ws: { type: String },
+    },
+    scopes: { type: [String], default: [] },
+    status: { type: String, enum: ['online', 'offline'], default: 'offline' },
+    lastHandshake: Date,
+    compatibleVersion: { type: Boolean, default: false },
+    deletedAt: Date,
   },
-  status: { type: String, enum: ['online', 'offline'], default: 'offline' },
-  lastHandshake: Date,
-  compatibleVersion: { type: Boolean, default: false },
-  deletedAt: Date,
-}, { timestamps: true });
+  { timestamps: true }
+);
 
 // Validate module manifest
-ModuleSchema.pre('save', async function(next) {
+ModuleSchema.pre('save', async function (next) {
   if (!(await approveManifest(this.manifest as ModuleManifest))) {
     return next(new Error('Invalid module manifest'));
   }
@@ -49,4 +55,5 @@ ModuleSchema.index({ ownerId: 1 });
 ModuleSchema.index({ name: 1 });
 ModuleSchema.index({ deletedAt: 1 });
 
-export default models.Module || mongoose.model<IModule>('Module', ModuleSchema);
+export default (models.Module as mongoose.Model<IModule>) ||
+  mongoose.model<IModule>('Module', ModuleSchema);
