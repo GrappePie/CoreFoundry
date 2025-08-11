@@ -180,6 +180,24 @@ un resumen legible de todos los problemas detectados.
 - **Endpoints HTTP**: se usan para operaciones sincrónicas declaradas en el manifest.
 - **Seguridad**: los tokens y permisos se propagan entre módulos y se auditan todas las llamadas.
 
+### Event Bus
+
+La comunicación asíncrona se realiza a través de un exchange de tipo *topic*
+llamado `core.events`. Cada servicio crea su propia cola siguiendo el patrón
+`core.events.<servicio>` y la enlaza a las claves de enrutamiento de los
+eventos que consume.
+
+Los mensajes publicados deben respetar la siguiente convención:
+
+```json
+{
+  "type": "nombre.evento",
+  "payload": { "...": "" }
+}
+```
+
+`type` describe el evento y `payload` contiene los datos asociados.
+
 ---
 
 ## 🔑 Gestión de Usuarios y Subscripciones
