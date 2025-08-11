@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
-import Module from '@/models/Module';
+import { registerModule } from '@/services/moduleDiscovery';
 import { z } from 'zod';
 
 const registerSchema = z.object({
@@ -62,7 +62,7 @@ export async function POST(req: Request) {
       // Module unreachable, keep status offline
     }
 
-    const module = await Module.create({
+    const { module, integrationToken } = await registerModule({
       ...data,
       status,
       lastHandshake,
@@ -73,6 +73,7 @@ export async function POST(req: Request) {
       {
         status: 'registered',
         moduleId: module._id,
+        integrationToken,
         online: status === 'online',
         message:
           status === 'online'
