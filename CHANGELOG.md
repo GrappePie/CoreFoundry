@@ -10,6 +10,7 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 - Module orchestrator now pings modules in parallel before pruning.
+- Module orchestrator pings now have a timeout using `AbortController` to mark modules offline on timeout.
 
 ## [0.5.2] - 2025-08-11
 
