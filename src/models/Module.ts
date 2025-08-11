@@ -20,8 +20,8 @@ export interface IModule extends Document {
     manifest: ModuleManifest;
     createdAt: Date;
   }[];
-  /** Scopes granted to this module for API authorization checks. */
-  scopes: string[];
+  /** Permissions (scopes) granted to this module for API authorization checks. */
+  permissions: string[];
   status: 'online' | 'offline';
   lastHandshake?: Date;
   compatibleVersion: boolean;
@@ -49,7 +49,7 @@ const ModuleSchema: Schema = new Schema(
       ws: { type: String },
     },
     integrationToken: { type: String, required: true },
-    scopes: { type: [String], default: [] },
+    permissions: { type: [String], default: [] },
     status: { type: String, enum: ['online', 'offline'], default: 'offline' },
     lastHandshake: Date,
     compatibleVersion: { type: Boolean, default: false },

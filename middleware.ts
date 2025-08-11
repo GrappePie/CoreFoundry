@@ -1,10 +1,10 @@
 import { NextRequest } from 'next/server';
 import { auth } from '@/auth';
-import { verifyModuleScopes } from '@/app/api/middleware';
+import { verifyModulePermissions } from '@/middleware/auth';
 
 export async function middleware(request: NextRequest) {
   auth();
-  return verifyModuleScopes(request);
+  return verifyModulePermissions(request);
 }
 
 export const config = {
