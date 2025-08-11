@@ -20,7 +20,14 @@ export async function checkModules(
 
   const results = await Promise.all(
     modules.map(async (mod) => {
-      const pingUrl = new URL('/ping', mod.endpoints.rest).toString();
+      let pingUrl: string;
+      try {
+        pingUrl = new URL('/ping', mod.endpoints.rest).toString();
+      } catch (err) {
+        console.error('Invalid ping URL for module', mod._id, err);
+        await Module.findByIdAndUpdate(mod._id, { status: 'offline' });
+        return null;
+      }
       let online = false;
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), pingTimeoutMs);
@@ -40,7 +47,9 @@ export async function checkModules(
     })
   );
 
-  for (const { mod, online } of results) {
+  for (const result of results) {
+    if (!result) continue;
+    const { mod, online } = result;
     if (online) {
       await Module.findByIdAndUpdate(mod._id, {
         status: 'online',
