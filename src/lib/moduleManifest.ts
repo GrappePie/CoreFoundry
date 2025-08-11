@@ -1,4 +1,5 @@
 import Ajv, { JSONSchemaType } from 'ajv';
+import SchemaDefinition from '../services/schemaRegistry/schemaDefinition.model';
 
 export interface ModuleManifest {
   name: string;
@@ -87,3 +88,26 @@ const ajv = new Ajv({ allErrors: true });
  * validation feedback actionable.
  */
 export const validateManifest = ajv.compile(manifestSchema);
+
+export async function approveManifest(manifest: ModuleManifest): Promise<boolean> {
+  const valid = validateManifest(manifest);
+  if (!valid) {
+    return false;
+  }
+  const schemas = Object.entries(manifest.schemas || {});
+  let mismatch = false;
+  for (const [key, schema] of schemas) {
+    if (schema.$id) {
+      if (key !== schema.$id) {
+        mismatch = true;
+        console.warn(`Schema key "${key}" does not match $id "${schema.$id}"`);
+      }
+      await SchemaDefinition.updateOne(
+        { schemaId: schema.$id, version: manifest.version },
+        { schemaId: schema.$id, version: manifest.version, schema },
+        { upsert: true }
+      );
+    }
+  }
+  return mismatch ? false : true;
+}

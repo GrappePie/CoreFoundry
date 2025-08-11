@@ -2,7 +2,8 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import mongoose from 'mongoose';
 import Module from '../../models/Module';
-import { validateManifest, ModuleManifest } from '../moduleManifest';
+import { validateManifest, ModuleManifest, approveManifest } from '../moduleManifest';
+import SchemaDefinition from '../../services/schemaRegistry/schemaDefinition.model';
 
 // Helper to run Mongoose pre-save hooks without DB
 function runPreSave(doc: any) {
@@ -80,6 +81,9 @@ describe('validateManifest', () => {
   });
 });
 
+// Stub schema registry to avoid DB interactions during tests
+(SchemaDefinition as any).updateOne = async () => {};
+
 describe('ModuleSchema pre-save', () => {
   it('allows saving with valid manifest', async () => {
     const manifest: ModuleManifest = {
@@ -115,6 +119,24 @@ describe('ModuleSchema pre-save', () => {
       endpoints: { rest: '/api/inventory' },
     });
     await assert.rejects(runPreSave(mod), /Invalid module manifest/);
+  });
+});
+
+describe('approveManifest schema key mismatch', () => {
+  it('rejects manifest when key differs from $id and persists by $id', async () => {
+    let captured: any = null;
+    (SchemaDefinition as any).updateOne = async (query: any) => {
+      captured = query;
+    };
+    const manifest: ModuleManifest = {
+      name: 'inventory',
+      version: '1.0.0',
+      endpoints: { rest: '/api' },
+      schemas: { wrong: { $id: 'right', type: 'object' } },
+    };
+    const result = await approveManifest(manifest);
+    assert.equal(result, false);
+    assert.equal(captured.schemaId, 'right');
   });
 });
 
