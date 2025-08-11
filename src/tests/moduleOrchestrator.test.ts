@@ -14,7 +14,10 @@ const emitted: Array<{ event: string; moduleId: string }> = [];
 
 let modules: any[] = [];
 
-(Module as any).find = async () => modules;
+(Module as any).find = async (filter: any = {}) =>
+  modules.filter((m) =>
+    filter.deletedAt?.$exists === false ? !('deletedAt' in m) : true
+  );
 (Module as any).findByIdAndUpdate = async (id: any, update: any) => {
   const mod = modules.find((m) => m._id === id);
   Object.assign(mod, update);
@@ -98,5 +101,32 @@ describe('moduleOrchestrator service', () => {
     assert(m4);
     assert.equal(m4.status, 'offline');
     assert.deepEqual(emitted, [{ event: 'module.offline', moduleId: '4' }]);
+  });
+
+  it('does not process modules with deletedAt', async () => {
+    modules = [
+      {
+        _id: '1',
+        endpoints: { rest: 'https://m1.local/api' },
+        status: 'offline',
+      },
+      {
+        _id: '2',
+        endpoints: { rest: 'https://m2.local/api' },
+        status: 'offline',
+        deletedAt: new Date(),
+      },
+    ];
+    emitted.length = 0;
+
+    await checkModules(undefined, 50);
+    const m1 = modules.find((m) => m._id === '1');
+    const m2 = modules.find((m) => m._id === '2');
+    assert(m1);
+    assert(m2);
+    assert.equal(m1.status, 'online');
+    assert.equal(m2.status, 'offline');
+    assert.equal(m2.lastHandshake, undefined);
+    assert.deepEqual(emitted, [{ event: 'module.online', moduleId: '1' }]);
   });
 });

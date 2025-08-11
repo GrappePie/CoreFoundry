@@ -18,7 +18,7 @@ export async function checkModules(
   pruneOfflineMs?: number,
   pingTimeoutMs = 5_000
 ) {
-  const modules = await Module.find();
+  const modules = await Module.find({ deletedAt: { $exists: false } });
   const now = Date.now();
 
   const results = await Promise.all(
