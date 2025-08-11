@@ -10,6 +10,7 @@ export interface OrchestratorOptions {
   intervalMs?: number;
   pruneOfflineMs?: number;
   maxConcurrentPings?: number;
+  pingTimeoutMs?: number;
 }
 
 /**
@@ -130,7 +131,12 @@ export async function checkModules(
  * Starts periodic module orchestration.
  */
 export function startModuleOrchestrator(options: OrchestratorOptions = {}) {
-  const { intervalMs = 60_000, pruneOfflineMs, maxConcurrentPings } = options;
+  const {
+    intervalMs = 60_000,
+    pruneOfflineMs,
+    maxConcurrentPings,
+    pingTimeoutMs,
+  } = options;
   if (isActive) return;
   isActive = true;
 
@@ -138,7 +144,7 @@ export function startModuleOrchestrator(options: OrchestratorOptions = {}) {
     if (!isActive || isRunning) return;
     isRunning = true;
     try {
-      await checkModules(pruneOfflineMs, undefined, maxConcurrentPings);
+      await checkModules(pruneOfflineMs, pingTimeoutMs, maxConcurrentPings);
     } catch (err) {
       logger.error('Module orchestration error', err);
     } finally {

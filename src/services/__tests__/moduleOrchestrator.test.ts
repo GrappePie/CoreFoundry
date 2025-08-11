@@ -1,6 +1,10 @@
 import { describe, it, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
-import { checkModules } from '../moduleOrchestrator';
+import {
+  checkModules,
+  startModuleOrchestrator,
+  stopModuleOrchestrator,
+} from '../moduleOrchestrator';
 import Module from '../../models/Module';
 import * as eventBus from '../../messaging/eventBus';
 
@@ -133,5 +137,51 @@ describe('moduleOrchestrator service', () => {
     await checkModules(undefined, undefined, 5);
 
     assert.ok(maxActive <= 5);
+  });
+
+  it('aborts ping after pingTimeoutMs', async () => {
+    const modules = [
+      { _id: '1', endpoints: { rest: 'http://m1' }, lastHandshake: new Date() },
+    ];
+    (Module as any).find = async () => modules;
+    (Module as any).findByIdAndUpdate = async () => {};
+    const durations: number[] = [];
+    global.fetch = async (_: string, init: any) =>
+      new Promise((resolve) => {
+        const start = Date.now();
+        init.signal.addEventListener('abort', () => {
+          durations.push(Date.now() - start);
+          resolve({ ok: false } as any);
+        });
+      });
+
+    await checkModules(undefined, 10);
+
+    assert.ok(durations[0] >= 10);
+    assert.ok(durations[0] < 50);
+  });
+
+  it('passes pingTimeoutMs from startModuleOrchestrator to checkModules', async () => {
+    const modules = [
+      { _id: '1', endpoints: { rest: 'http://m1' }, lastHandshake: new Date() },
+    ];
+    (Module as any).find = async () => modules;
+    (Module as any).findByIdAndUpdate = async () => {};
+    const durations: number[] = [];
+    global.fetch = async (_: string, init: any) =>
+      new Promise((resolve) => {
+        const start = Date.now();
+        init.signal.addEventListener('abort', () => {
+          durations.push(Date.now() - start);
+          resolve({ ok: false } as any);
+        });
+      });
+
+    startModuleOrchestrator({ intervalMs: 1_000, pingTimeoutMs: 10 });
+    await new Promise((r) => setTimeout(r, 50));
+    stopModuleOrchestrator();
+
+    assert.ok(durations[0] >= 10);
+    assert.ok(durations[0] < 50);
   });
 });
