@@ -4,7 +4,13 @@ import { checkModules } from '../services/moduleOrchestrator';
 import Module from '../models/Module';
 import * as eventBus from '../messaging/eventBus';
 
-(eventBus as any).publish = async () => {};
+const emitted: Array<{ event: string; moduleId: string }> = [];
+(eventBus as any).publish = async (
+  event: string,
+  payload: { moduleId: string }
+) => {
+  emitted.push({ event, moduleId: payload.moduleId });
+};
 
 const modules: any[] = [
   {
@@ -61,7 +67,7 @@ const modules: any[] = [
 };
 
 describe('moduleOrchestrator service', () => {
-  it('updates module status and prunes long-term offline modules', async () => {
+  it('updates module status, prunes offline modules and emits events', async () => {
     await checkModules(30 * 24 * 60 * 60 * 1000, 50);
     assert.equal(modules.length, 3);
     const m1 = modules.find((m) => m._id === '1');
@@ -74,5 +80,11 @@ describe('moduleOrchestrator service', () => {
     assert(m1.lastHandshake instanceof Date);
     assert.equal(m3.status, 'offline');
     assert.equal(m4.status, 'offline');
+
+    assert.deepEqual(emitted, [
+      { event: 'module.online', moduleId: '1' },
+      { event: 'module.removed', moduleId: '2' },
+      { event: 'module.offline', moduleId: '3' },
+    ]);
   });
 });
