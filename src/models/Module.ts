@@ -1,6 +1,7 @@
 import mongoose, { Schema, Document, models } from 'mongoose';
 import mongoosePaginate from 'mongoose-paginate-v2';
-import { ModuleManifest, approveManifest } from '../lib/moduleManifest';
+import { ModuleManifest } from '../lib/moduleManifestSchema';
+import { approveManifest } from '../lib/moduleManifest';
 
 export interface IModule extends Document {
   name: string;
@@ -12,6 +13,11 @@ export interface IModule extends Document {
     rest: string;
     ws?: string;
   };
+  manifestHistory?: {
+    version: string;
+    manifest: ModuleManifest;
+    createdAt: Date;
+  }[];
   /** Scopes granted to this module for API authorization checks. */
   scopes: string[];
   status: 'online' | 'offline';
@@ -26,6 +32,16 @@ const ModuleSchema: Schema = new Schema(
     description: { type: String, default: '' },
     ownerId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     manifest: { type: Schema.Types.Mixed, required: true },
+    manifestHistory: {
+      type: [
+        {
+          version: { type: String, required: true },
+          manifest: { type: Schema.Types.Mixed, required: true },
+          createdAt: { type: Date, default: Date.now },
+        },
+      ],
+      default: [],
+    },
     endpoints: {
       rest: { type: String, required: true },
       ws: { type: String },
@@ -41,8 +57,22 @@ const ModuleSchema: Schema = new Schema(
 
 // Validate module manifest
 ModuleSchema.pre('save', async function (next) {
-  if (!(await approveManifest(this.manifest as ModuleManifest))) {
+  const doc = this as unknown as IModule;
+  if (!(await approveManifest(doc.manifest as ModuleManifest))) {
     return next(new Error('Invalid module manifest'));
+  }
+  if (!doc.manifestHistory) {
+    doc.manifestHistory = [];
+  }
+  const exists = doc.manifestHistory.some(
+    (m) => m.version === doc.version
+  );
+  if (!exists) {
+    doc.manifestHistory.push({
+      version: doc.version,
+      manifest: doc.manifest,
+      createdAt: new Date(),
+    });
   }
   next();
 });

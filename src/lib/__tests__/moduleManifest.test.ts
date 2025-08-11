@@ -2,7 +2,8 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import mongoose from 'mongoose';
 import Module from '../../models/Module';
-import { validateManifest, ModuleManifest, approveManifest } from '../moduleManifest';
+import { validateManifest, approveManifest } from '../moduleManifest';
+import { ModuleManifest } from '../moduleManifestSchema';
 import SchemaDefinition from '../../services/schemaRegistry/schemaDefinition.model';
 
 // Helper to run Mongoose pre-save hooks without DB

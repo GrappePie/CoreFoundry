@@ -116,6 +116,32 @@ Cada módulo debe proporcionar un **manifest** JSON con metadatos clave (nombre,
 }
 ```
 
+### Flujo de registro y actualización
+
+1. El módulo envía su manifest al endpoint de registro del Módulo Central.
+2. El manifest se valida con `moduleManifestSchema` mediante AJV.
+3. Si es válido, se persiste y se agrega una entrada en `manifestHistory` con la versión.
+4. Para actualizar, el módulo envía un nuevo manifest con versión incrementada y el proceso se repite.
+
+#### Ejemplo de actualización
+
+```json
+{
+  "name": "inventory",
+  "version": "1.1.0",
+  "endpoints": {
+    "rest": "https://inventory.local/api",
+    "ws": "wss://inventory.local/ws"
+  },
+  "schemas": { "product": { "$id": "#/product", "type": "object" } },
+  "dependencies": ["sales"],
+  "events": {
+    "publish": ["stock.updated"],
+    "subscribe": ["order.created"]
+  }
+}
+```
+
 ### Validación y manejo de errores
 
 `validateManifest` devuelve `false` si el manifest no cumple el contrato y
