@@ -143,6 +143,7 @@ export async function checkModules(
   let skip = 0;
   while (true) {
     const modules = await Module.find({ deletedAt: { $exists: false } })
+      .sort({ _id: 1 })
       .skip(skip)
       .limit(batchSize);
     if (modules.length === 0) break;
