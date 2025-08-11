@@ -363,7 +363,23 @@ Consulta [docs/security.md](./docs/security.md) para más detalles sobre la conf
 - **Build producción**: `npm run build && npm start`  
 - **Lint**: `npm run lint`  
 - **Tests**: `npm run test`  
-- **CLI de Módulos**: `npx module-cli init <nombre>` – crea la estructura base de un módulo [guía](./docs/module-cli.md)
+- **CLI de Módulos**: `npx module-cli <comando>` – utilidades para módulos (ver [CLI de Módulos](#cli-de-módulos))
+
+## CLI de Módulos
+
+Instala la dependencia de desarrollo:
+
+```bash
+npm install --save-dev @core/module-cli
+```
+
+Comandos disponibles:
+
+```bash
+npx module-cli create <nombre>
+npx module-cli validate [directorio]
+npx module-cli test [directorio]
+```
 
 ---
 
