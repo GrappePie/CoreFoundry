@@ -119,10 +119,10 @@ export async function checkModules(
               moduleId: String(mod._id),
             });
           } catch (err) {
-          logger.error('Failed to publish module.removed event', err);
+            logger.error('Failed to publish module.removed event', err);
+          }
+          continue;
         }
-        continue;
-      }
         const wasOffline = mod.status === 'offline';
         try {
           await Module.findByIdAndUpdate(mod._id, { status: 'offline' });
