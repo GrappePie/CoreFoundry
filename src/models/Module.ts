@@ -1,14 +1,13 @@
 import mongoose, { Schema, Document, models } from 'mongoose';
-import Ajv, { AnySchema } from 'ajv';
 import mongoosePaginate from 'mongoose-paginate-v2';
-
-const ajv = new Ajv();
+import { ModuleManifest, validateManifest } from '../lib/moduleManifest';
 
 export interface IModule extends Document {
   name: string;
+  version: string;
   description: string;
   ownerId: mongoose.Types.ObjectId;
-  schema: any;
+  manifest: ModuleManifest;
   endpoints: {
     rest: string;
     ws?: string;
@@ -17,9 +16,10 @@ export interface IModule extends Document {
 
 const ModuleSchema: Schema = new Schema({
   name: { type: String, required: true },
+  version: { type: String, required: true },
   description: { type: String, default: '' },
   ownerId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-  schema: { type: Schema.Types.Mixed, required: true },
+  manifest: { type: Schema.Types.Mixed, required: true },
   endpoints: {
     rest: { type: String, required: true },
     ws: { type: String },
@@ -27,10 +27,10 @@ const ModuleSchema: Schema = new Schema({
   deletedAt: Date,
 }, { timestamps: true });
 
-// Validate JSON Schema
+// Validate module manifest
 ModuleSchema.pre('save', function(next) {
-  if (!ajv.validateSchema(this.schema as AnySchema)) {
-    return next(new Error('Invalid module JSON Schema: ' + ajv.errorsText(ajv.errors)));
+  if (!validateManifest(this.manifest as ModuleManifest)) {
+    return next(new Error('Invalid module manifest'));
   }
   next();
 });
