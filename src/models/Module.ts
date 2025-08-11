@@ -12,6 +12,9 @@ export interface IModule extends Document {
     rest: string;
     ws?: string;
   };
+  status: 'online' | 'offline';
+  lastHandshake?: Date;
+  compatibleVersion: boolean;
 }
 
 const ModuleSchema: Schema = new Schema({
@@ -24,6 +27,9 @@ const ModuleSchema: Schema = new Schema({
     rest: { type: String, required: true },
     ws: { type: String },
   },
+  status: { type: String, enum: ['online', 'offline'], default: 'offline' },
+  lastHandshake: Date,
+  compatibleVersion: { type: Boolean, default: false },
   deletedAt: Date,
 }, { timestamps: true });
 
