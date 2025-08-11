@@ -29,6 +29,11 @@ export async function checkModules(
       } catch (err) {
         logger.error('Invalid ping URL for module', mod._id, err);
         await Module.findByIdAndUpdate(mod._id, { status: 'offline' });
+        try {
+          await eventBus.publish('module.offline', { moduleId: String(mod._id) });
+        } catch (err) {
+          logger.error('Failed to publish module.offline event', err);
+        }
         return null;
       }
       let online = false;
