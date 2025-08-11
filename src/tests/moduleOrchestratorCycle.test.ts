@@ -28,12 +28,14 @@ describe('module orchestrator cycle control', () => {
     };
 
     startModuleOrchestrator({ intervalMs: 10 });
-    await wait(200);
+    await wait(5);
+    assert.equal(running, 1);
+    await wait(195);
     stopModuleOrchestrator();
     await wait(100);
 
     assert.equal(maxRunning, 1);
-    assert.ok(calls >= 2);
+    assert.ok(calls >= 3);
   });
 
   it('recovers and schedules new cycle after errors', async () => {
@@ -45,6 +47,8 @@ describe('module orchestrator cycle control', () => {
     };
 
     startModuleOrchestrator({ intervalMs: 10 });
+    await wait(1);
+    assert.equal(calls, 1);
     await wait(120);
     stopModuleOrchestrator();
     await wait(50);

@@ -110,7 +110,7 @@ export function startModuleOrchestrator(options: OrchestratorOptions = {}) {
       }
     }
   };
-
+  run();
   timer = setTimeout(run, intervalMs);
 }
 
