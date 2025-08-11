@@ -23,3 +23,9 @@ X-Module-Scopes: auth:login
 
 Si el módulo `64fae1...` incluye `auth:login` en su arreglo de `permissions`, la solicitud será procesada normalmente.
 De lo contrario, el middleware responderá con un mensaje de error e impedirá la ejecución del handler.
+
+## Autenticación de registro de módulos
+
+El endpoint `POST /api/modules/register` requiere un encabezado `Authorization` con un token JWT válido.
+El `ownerId` enviado en el cuerpo debe coincidir con el `userId` contenido en el token; de lo contrario la solicitud se rechaza
+con `401` (token inválido) o `403` (propietario distinto).
