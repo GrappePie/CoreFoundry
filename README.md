@@ -338,14 +338,22 @@ El **Módulo Central** gestiona:
 
 - `GET /api/auditLogs`         – Consultar logs de operaciones
 
-## 🔐 Scopes de Módulos
+## 🔐 Política de Permisos
 
-Los módulos registrados pueden declarar un arreglo `scopes` con los permisos que tienen habilitados.
+Los módulos registrados pueden declarar un arreglo `permissions` con los scopes que tienen habilitados.
 Un middleware para todas las rutas bajo `/api` verifica que el módulo que realiza la solicitud
 esté identificado mediante el encabezado `X-Module-Id` y que posea todos los scopes indicados en
 `X-Module-Scopes`.
 
-Consulta [docs/security.md](./docs/security.md) para más detalles sobre la configuración y uso de scopes.
+**Ejemplo:**
+
+```http
+POST /api/auth/login
+X-Module-Id: 64fae1...
+X-Module-Scopes: auth:login
+```
+
+Consulta [docs/security.md](./docs/security.md) para más detalles sobre la configuración y uso de permisos.
 
 ---
 

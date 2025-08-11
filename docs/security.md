@@ -1,6 +1,6 @@
-# Seguridad y Scopes de Módulos
+# Seguridad y Permisos de Módulos
 
-Los módulos registrados en **CoreFoundry** ahora incluyen un campo `scopes` que define los permisos disponibles para cada módulo.
+Los módulos registrados en **CoreFoundry** ahora incluyen un campo `permissions` que define los scopes disponibles para cada módulo.
 Los scopes representan acciones autorizadas (por ejemplo, `auth:login`, `inventory:read`).
 
 ## Encabezados requeridos
@@ -11,7 +11,7 @@ Toda petición a rutas bajo `/api` debe incluir los siguientes encabezados:
 - `X-Module-Scopes`: Lista separada por comas con los scopes necesarios para la operación.
 
 El middleware verifica que el módulo exista y que todos los scopes solicitados estén permitidos. Si falta alguno de los encabezados
-obligatorios o si el módulo no posee los scopes requeridos, la solicitud se rechaza con los códigos `401` o `403` según corresponda.
+obligatorios o si el módulo no posee los permisos requeridos, la solicitud se rechaza con los códigos `401` o `403` según corresponda.
 
 ## Ejemplo
 
@@ -21,5 +21,5 @@ X-Module-Id: 64fae1...
 X-Module-Scopes: auth:login
 ```
 
-Si el módulo `64fae1...` incluye `auth:login` en su arreglo de `scopes`, la solicitud será procesada normalmente.
+Si el módulo `64fae1...` incluye `auth:login` en su arreglo de `permissions`, la solicitud será procesada normalmente.
 De lo contrario, el middleware responderá con un mensaje de error e impedirá la ejecución del handler.
