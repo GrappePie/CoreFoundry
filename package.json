@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "test": "rm -rf .tmp-tests && tsc src/**/*.ts --outDir .tmp-tests --module commonjs --target ES2019 --esModuleInterop --skipLibCheck --strictNullChecks && node --test \".tmp-tests/**/*.test.js\" && rm -rf .tmp-tests"
+    "test": "rm -rf .tmp-tests && tsc src/**/*.ts --outDir .tmp-tests --module commonjs --target ES2019 --esModuleInterop --skipLibCheck --strictNullChecks && node --test $(find .tmp-tests -name '*.test.js' -o -name '*.spec.js') && rm -rf .tmp-tests"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.84.1",
