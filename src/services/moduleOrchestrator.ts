@@ -53,6 +53,7 @@ export async function checkModules(
         online = false;
       } else {
         online = false;
+        logger.error('Ping failed', err);
       }
     } finally {
       clearTimeout(timeout);
