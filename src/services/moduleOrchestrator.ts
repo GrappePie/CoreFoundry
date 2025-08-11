@@ -22,8 +22,8 @@ export async function checkModules(
   pingTimeoutMs = 5_000,
   maxConcurrentPings = 10
 ) {
-  const modules = await Module.find({ deletedAt: { $exists: false } });
   const now = Date.now();
+  const batchSize = 100;
 
   async function pingModule(mod: any) {
     let pingUrl: string;
@@ -57,73 +57,91 @@ export async function checkModules(
     return { mod, online };
   }
 
-  const results: Array<{ mod: any; online: boolean } | null> = [];
-  let index = 0;
-  async function worker() {
-    while (true) {
-      const mod = modules[index++];
-      if (!mod) break;
-      results.push(await pingModule(mod));
+  async function processBatch(modules: any[]) {
+    const results: Array<{ mod: any; online: boolean } | null> = [];
+    let index = 0;
+    async function worker() {
+      while (true) {
+        const mod = modules[index++];
+        if (!mod) break;
+        results.push(await pingModule(mod));
+      }
     }
-  }
-  const workers = Array.from(
-    { length: Math.min(maxConcurrentPings, modules.length) },
-    () => worker()
-  );
-  await Promise.all(workers);
+    const workers = Array.from(
+      { length: Math.min(maxConcurrentPings, modules.length) },
+      () => worker()
+    );
+    await Promise.all(workers);
 
-  for (const result of results) {
-    if (!result) continue;
-    const { mod, online } = result;
-    if (online) {
-      try {
-        await Module.findByIdAndUpdate(mod._id, {
-          status: 'online',
-          lastHandshake: new Date(),
-        });
-      } catch (err) {
-        logger.error('Failed to update module to online', mod._id, err);
-        continue;
-      }
-      logger.info(`Module ${mod._id} is online`);
-      try {
-        await eventBus.publish('module.online', { moduleId: String(mod._id) });
-      } catch (err) {
-        logger.error('Failed to publish module.online event', err);
-      }
-    } else {
-      if (
-        pruneOfflineMs &&
-        mod.lastHandshake &&
-        now - new Date(mod.lastHandshake).getTime() > pruneOfflineMs
-      ) {
+    for (const result of results) {
+      if (!result) continue;
+      const { mod, online } = result;
+      if (online) {
         try {
-          await Module.deleteOne({ _id: mod._id });
+          await Module.findByIdAndUpdate(mod._id, {
+            status: 'online',
+            lastHandshake: new Date(),
+          });
         } catch (err) {
-          logger.error('Failed to delete module', mod._id, err);
+          logger.error('Failed to update module to online', mod._id, err);
           continue;
         }
-        logger.info(`Module ${mod._id} removed after exceeding offline threshold`);
+        logger.info(`Module ${mod._id} is online`);
         try {
-          await eventBus.publish('module.removed', { moduleId: String(mod._id) });
+          await eventBus.publish('module.online', { moduleId: String(mod._id) });
         } catch (err) {
-          logger.error('Failed to publish module.removed event', err);
+          logger.error('Failed to publish module.online event', err);
         }
-        continue;
-      }
-      try {
-        await Module.findByIdAndUpdate(mod._id, { status: 'offline' });
-      } catch (err) {
-        logger.error('Failed to update module to offline', mod._id, err);
-        continue;
-      }
-      logger.info(`Module ${mod._id} is offline`);
-      try {
-        await eventBus.publish('module.offline', { moduleId: String(mod._id) });
-      } catch (err) {
-        logger.error('Failed to publish module.offline event', err);
+      } else {
+        if (
+          pruneOfflineMs &&
+          mod.lastHandshake &&
+          now - new Date(mod.lastHandshake).getTime() > pruneOfflineMs
+        ) {
+          try {
+            await Module.deleteOne({ _id: mod._id });
+          } catch (err) {
+            logger.error('Failed to delete module', mod._id, err);
+            continue;
+          }
+          logger.info(
+            `Module ${mod._id} removed after exceeding offline threshold`
+          );
+          try {
+            await eventBus.publish('module.removed', {
+              moduleId: String(mod._id),
+            });
+          } catch (err) {
+            logger.error('Failed to publish module.removed event', err);
+          }
+          continue;
+        }
+        try {
+          await Module.findByIdAndUpdate(mod._id, { status: 'offline' });
+        } catch (err) {
+          logger.error('Failed to update module to offline', mod._id, err);
+          continue;
+        }
+        logger.info(`Module ${mod._id} is offline`);
+        try {
+          await eventBus.publish('module.offline', {
+            moduleId: String(mod._id),
+          });
+        } catch (err) {
+          logger.error('Failed to publish module.offline event', err);
+        }
       }
     }
+  }
+
+  let skip = 0;
+  while (true) {
+    const modules = await Module.find({ deletedAt: { $exists: false } })
+      .skip(skip)
+      .limit(batchSize);
+    if (modules.length === 0) break;
+    await processBatch(modules);
+    skip += modules.length;
   }
 }
 
