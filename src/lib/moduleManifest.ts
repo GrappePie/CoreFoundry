@@ -94,9 +94,14 @@ export async function approveManifest(manifest: ModuleManifest): Promise<boolean
   if (!valid) {
     return false;
   }
-  const schemas = Object.values(manifest.schemas || {});
-  for (const schema of schemas) {
+  const schemas = Object.entries(manifest.schemas || {});
+  let mismatch = false;
+  for (const [key, schema] of schemas) {
     if (schema.$id) {
+      if (key !== schema.$id) {
+        mismatch = true;
+        console.warn(`Schema key "${key}" does not match $id "${schema.$id}"`);
+      }
       await SchemaDefinition.updateOne(
         { schemaId: schema.$id, version: manifest.version },
         { schemaId: schema.$id, version: manifest.version, schema },
@@ -104,5 +109,5 @@ export async function approveManifest(manifest: ModuleManifest): Promise<boolean
       );
     }
   }
-  return true;
+  return mismatch ? false : true;
 }
