@@ -12,29 +12,7 @@ const emitted: Array<{ event: string; moduleId: string }> = [];
   emitted.push({ event, moduleId: payload.moduleId });
 };
 
-const modules: any[] = [
-  {
-    _id: '1',
-    endpoints: { rest: 'https://m1.local/api' },
-    status: 'offline',
-  },
-  {
-    _id: '2',
-    endpoints: { rest: 'https://m2.local/api' },
-    status: 'offline',
-    lastHandshake: new Date(Date.now() - 40 * 24 * 60 * 60 * 1000),
-  },
-  {
-    _id: '3',
-    endpoints: { rest: 'https://m3.local/api' },
-    status: 'offline',
-  },
-  {
-    _id: '4',
-    endpoints: { rest: 'invalid-url' },
-    status: 'online',
-  },
-];
+let modules: any[] = [];
 
 (Module as any).find = async () => modules;
 (Module as any).findByIdAndUpdate = async (id: any, update: any) => {
@@ -68,23 +46,57 @@ const modules: any[] = [
 
 describe('moduleOrchestrator service', () => {
   it('updates module status, prunes offline modules and emits events', async () => {
+    modules = [
+      {
+        _id: '1',
+        endpoints: { rest: 'https://m1.local/api' },
+        status: 'offline',
+      },
+      {
+        _id: '2',
+        endpoints: { rest: 'https://m2.local/api' },
+        status: 'offline',
+        lastHandshake: new Date(Date.now() - 40 * 24 * 60 * 60 * 1000),
+      },
+      {
+        _id: '3',
+        endpoints: { rest: 'https://m3.local/api' },
+        status: 'offline',
+      },
+    ];
+    emitted.length = 0;
+
     await checkModules(30 * 24 * 60 * 60 * 1000, 50);
-    assert.equal(modules.length, 3);
+    assert.equal(modules.length, 2);
     const m1 = modules.find((m) => m._id === '1');
     const m3 = modules.find((m) => m._id === '3');
-    const m4 = modules.find((m) => m._id === '4');
     assert(m1);
     assert(m3);
-    assert(m4);
     assert.equal(m1.status, 'online');
     assert(m1.lastHandshake instanceof Date);
     assert.equal(m3.status, 'offline');
-    assert.equal(m4.status, 'offline');
 
     assert.deepEqual(emitted, [
       { event: 'module.online', moduleId: '1' },
       { event: 'module.removed', moduleId: '2' },
       { event: 'module.offline', moduleId: '3' },
     ]);
+  });
+
+  it('emits module.offline when ping URL is invalid', async () => {
+    modules = [
+      {
+        _id: '4',
+        endpoints: { rest: 'invalid-url' },
+        status: 'online',
+      },
+    ];
+    emitted.length = 0;
+
+    await checkModules(undefined, 50);
+    const m4 = modules.find((m) => m._id === '4');
+    assert(m4);
+    assert.equal(m4.status, 'offline');
+    assert.deepEqual(emitted, [{ event: 'module.offline', moduleId: '4' }]);
   });
 });
