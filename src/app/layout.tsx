@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import Providers from "@/components/Providers";
+import { connectRabbit } from '@/lib/rabbitmq';
+import { initAuditService } from '@/lib/auditService';
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -54,6 +56,9 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  connectRabbit()
+    .then(() => initAuditService())
+    .catch(err => console.error('Error inicializando RabbitMQ/auditService:', err));
   return (
     <html lang="es" className="scroll-smooth">
       <body className={inter.className}>

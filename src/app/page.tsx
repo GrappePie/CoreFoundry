@@ -323,60 +323,63 @@ export default function Home() {
        </div>
 
       {/* Plans section */}
-      <div id="plans" className="scroll-mt-16 py-20 px-4 sm:px-6 lg:px-8 bg-slate-900">
-        <div className="max-w-7xl mx-auto text-center mb-8">
-          <h2 className="text-4xl font-bold text-slate-100">Planes de Suscripción</h2>
-          <div className="flex justify-center mt-4">
-            <button onClick={() => setBillingCycle('monthly')} className={`px-4 py-2 rounded-l-full ${billingCycle === 'monthly' ? 'bg-sky-600 text-white' : 'bg-white/10 text-slate-300'}`}>Mensual</button>
-            <button onClick={() => setBillingCycle('annual')} className={`px-4 py-2 rounded-r-full ${billingCycle === 'annual' ? 'bg-sky-600 text-white' : 'bg-white/10 text-slate-300'}`}>Anual</button>
-          </div>
-        </div>
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-          {subscriptionFeatures.map((plan, index) => {
-            const priceLabel = plan.monthlyPrice === null
+      <div id="plans" className="scroll-mt-16 py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-slate-900 to-slate-800">
+  <div className="max-w-7xl mx-auto text-center mb-8">
+    <h2 className="text-4xl font-bold text-slate-100">Planes de Suscripción</h2>
+    <div className="flex justify-center mt-6">
+      <button onClick={() => setBillingCycle('monthly')} className={`px-6 py-3 rounded-l-full shadow-md ${billingCycle === 'monthly' ? 'bg-sky-600 text-white' : 'bg-white/10 text-slate-300'}`}>Mensual</button>
+      <button onClick={() => setBillingCycle('annual')} className={`px-6 py-3 rounded-r-full shadow-md ${billingCycle === 'annual' ? 'bg-sky-600 text-white' : 'bg-white/10 text-slate-300'}`}>Anual</button>
+    </div>
+  </div>
+  <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+    {subscriptionFeatures.map((plan, index) => {
+      const priceLabel = plan.monthlyPrice === null
               ? 'Personalizado'
               : plan.monthlyPrice === 0
                 ? 'Gratis'
                 : billingCycle === 'monthly'
                   ? `$${plan.monthlyPrice}/mes`
                   : `$${plan.monthlyPrice * 10}/año`;
-            return (
-              <motion.div key={plan.title} initial={{ opacity: 0, y: 50 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.5 }} transition={{ duration: 0.5, delay: index * 0.2 }} className="p-8 rounded-xl backdrop-blur-sm bg-white/5 border border-white/10 text-center flex flex-col items-center">
-                <div className="bg-sky-900/50 p-4 rounded-full mb-4">
-                    <plan.icon className="w-8 h-8 text-sky-400" />
-                </div>
-                <h3 className="text-2xl font-semibold text-slate-100 mt-4">{plan.title}</h3>
-                <p className="mt-2 text-3xl font-bold text-sky-400">{priceLabel}</p>
-                {billingCycle === 'annual' && plan.monthlyPrice != null && <p className="text-sm text-slate-300 mt-1">Equivalente a {plan.monthlyPrice * 12} meses al precio de 10</p>}
-                <p className="mt-4 text-slate-300 flex-1">{plan.description}</p>
-                {/* features details list */}
-                <div className="mt-4 w-full text-left">
-                  {plan.features.map((feature, i) => (
-                    <details key={i} className="mb-2 bg-white/10 rounded p-2">
-                      <summary className="flex justify-between items-center cursor-pointer">
-                        <div className="flex items-center space-x-2">
-                          <Check className="w-5 h-5 text-sky-400" />
-                          <span className="text-slate-300">{feature.name}</span>
-                        </div>
-                        <Info className="w-5 h-5 text-slate-300" />
-                      </summary>
-                      <div className="mt-2 text-slate-300 text-sm">{feature.answer}</div>
-                    </details>
-                  ))}
-                </div>
-                <button
-                    className="mt-6 bg-sky-600 hover:bg-sky-500 text-white font-medium py-2 px-6 rounded-full shadow-lg shadow-sky-500/20 transition-all duration-300"
-                    onClick={() => {
-                        // TODO: Integrar método de pago
-                    }}
-                >
-                    Seleccionar
-                </button>
-              </motion.div>
-            );
-          })}
-        </div>
-      </div>
+      return (
+        <motion.div key={plan.title} initial={{ opacity: 0, y: 50 }} whileInView={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: index * 0.2 }}
+          className="relative p-8 rounded-xl backdrop-blur-md bg-white/10 border border-transparent group hover:border-sky-500 transition-all duration-300 hover:scale-105 shadow-lg text-center flex flex-col items-center">
+         {plan.title === 'Pro' && (
+           <div className="absolute top-4 right-4 bg-sky-500 text-white text-xs font-semibold px-3 py-1 rounded-full z-10">Recomendado</div>
+         )}
+          <div className="bg-gradient-to-br from-sky-800 to-blue-800 p-5 rounded-full mb-4 transition-colors duration-300 group-hover:from-sky-700 group-hover:to-blue-700">
+              <plan.icon className="w-8 h-8 text-white" />
+          </div>
+          <h3 className="text-2xl font-semibold text-slate-100 mt-4">{plan.title}</h3>
+        <p className="mt-2 text-4xl font-extrabold bg-gradient-to-r from-sky-400 to-blue-400 text-transparent bg-clip-text">{priceLabel}</p>
+          {billingCycle === 'annual' && plan.monthlyPrice != null && <p className="text-sm text-slate-300 mt-1">Equivalente a {plan.monthlyPrice * 12} meses al precio de 10</p>}
+          <p className="mt-4 text-slate-300 flex-1">{plan.description}</p>
+          <div className="mt-4 w-full text-left">
+            {plan.features.map((feature, i) => (
+              <details key={i} className="mb-2 bg-white/10 rounded p-2">
+                <summary className="flex justify-between items-center cursor-pointer">
+                  <div className="flex items-center space-x-2">
+                    <Check className="w-5 h-5 text-sky-400" />
+                    <span className="text-slate-300">{feature.name}</span>
+                  </div>
+                  <Info className="w-5 h-5 text-slate-300" />
+                </summary>
+                <div className="mt-2 text-slate-300 text-sm">{feature.answer}</div>
+              </details>
+            ))}
+          </div>
+        <button
+            className="mt-6 bg-gradient-to-r from-sky-600 to-blue-600 hover:from-sky-500 hover:to-blue-500 text-white font-semibold py-3 px-8 rounded-full shadow-xl transition-transform transform group-hover:-translate-y-1"
+            onClick={() => {
+                // TODO: Integrar método de pago
+            }}
+        >
+            Seleccionar
+        </button>
+      </motion.div>
+    );
+  })}
+  </div>
+</div>
 
       {/* Ecosystem section */}
       <div id="ecosystem" className="scroll-mt-16 py-20 px-4 sm:px-6 lg:px-8">
