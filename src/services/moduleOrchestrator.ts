@@ -1,6 +1,7 @@
 import Module from '../models/Module';
 
-let interval: NodeJS.Timeout | null = null;
+let timer: NodeJS.Timeout | null = null;
+let isRunning = false;
 
 export interface OrchestratorOptions {
   intervalMs?: number;
@@ -74,20 +75,32 @@ export async function checkModules(
  */
 export function startModuleOrchestrator(options: OrchestratorOptions = {}) {
   const { intervalMs = 60_000, pruneOfflineMs } = options;
-  if (interval) return;
-  interval = setInterval(() => {
-    checkModules(pruneOfflineMs).catch((err) =>
-      console.error('Module orchestration error', err)
-    );
-  }, intervalMs);
+  if (timer) return;
+
+  const run = async () => {
+    if (isRunning) return;
+    isRunning = true;
+    try {
+      await checkModules(pruneOfflineMs);
+    } catch (err) {
+      console.error('Module orchestration error', err);
+    } finally {
+      isRunning = false;
+      if (timer) {
+        timer = setTimeout(run, intervalMs);
+      }
+    }
+  };
+
+  timer = setTimeout(run, intervalMs);
 }
 
 /**
  * Stops the running module orchestrator.
  */
 export function stopModuleOrchestrator() {
-  if (interval) {
-    clearInterval(interval);
-    interval = null;
+  if (timer) {
+    clearTimeout(timer);
+    timer = null;
   }
 }
