@@ -13,6 +13,8 @@ export interface IModule extends Document {
     rest: string;
     ws?: string;
   };
+  /** Token utilizado para autenticar integraciones entre módulos. */
+  integrationToken: string;
   manifestHistory?: {
     version: string;
     manifest: ModuleManifest;
@@ -46,6 +48,7 @@ const ModuleSchema: Schema = new Schema(
       rest: { type: String, required: true },
       ws: { type: String },
     },
+    integrationToken: { type: String, required: true },
     scopes: { type: [String], default: [] },
     status: { type: String, enum: ['online', 'offline'], default: 'offline' },
     lastHandshake: Date,

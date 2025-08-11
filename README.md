@@ -142,6 +142,16 @@ Cada módulo debe proporcionar un **manifest** JSON con metadatos clave (nombre,
 }
 ```
 
+### Registro y descubrimiento de módulos
+
+Los módulos se integran con el Módulo Central registrando su manifest a
+través del endpoint `POST /api/modules/register`. La respuesta incluye un
+`integrationToken` que identifica al módulo en futuras interacciones.
+
+Para consultar los módulos disponibles y su metadata básica, se expone el
+endpoint `GET /api/modules`, que devuelve un listado con todos los módulos
+registrados.
+
 ### Validación y manejo de errores
 
 `validateManifest` devuelve `false` si el manifest no cumple el contrato y

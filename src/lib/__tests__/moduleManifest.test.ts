@@ -100,6 +100,7 @@ describe('ModuleSchema pre-save', () => {
       ownerId: new mongoose.Types.ObjectId(),
       manifest,
       endpoints: { rest: '/api/inventory' },
+      integrationToken: 'token',
     });
     await runPreSave(mod); // should not throw
   });
@@ -118,6 +119,7 @@ describe('ModuleSchema pre-save', () => {
       ownerId: new mongoose.Types.ObjectId(),
       manifest,
       endpoints: { rest: '/api/inventory' },
+      integrationToken: 'token',
     });
     await assert.rejects(runPreSave(mod), /Invalid module manifest/);
   });
