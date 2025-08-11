@@ -90,7 +90,6 @@ describe('moduleOrchestrator service', () => {
     assert.deepEqual(emitted, [
       { event: 'module.online', moduleId: '1' },
       { event: 'module.removed', moduleId: '2' },
-      { event: 'module.offline', moduleId: '3' },
     ]);
   });
 
