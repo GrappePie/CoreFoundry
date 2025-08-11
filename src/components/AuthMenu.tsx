@@ -41,6 +41,13 @@ const AuthMenu = () => {
       {open && (
         <div className="absolute right-0 mt-2 w-48 bg-white text-black rounded shadow-lg z-30">
           <Link
+            href="/dashboard"
+            onClick={() => setOpen(false)}
+            className="block px-4 py-2 hover:bg-gray-100"
+          >
+            Dashboard
+          </Link>
+          <Link
             href="/profile"
             onClick={() => setOpen(false)}
             className="block px-4 py-2 hover:bg-gray-100"

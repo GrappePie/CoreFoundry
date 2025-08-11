@@ -10,3 +10,6 @@ panel correspondiente:
 
 Cada panel utiliza un layout compartido ubicado en `src/app/dashboard/layout.tsx`
 que centraliza el diseño común antes de cargar la vista específica del rol.
+
+Los usuarios pueden acceder a su panel desde el menú de usuario (AuthMenu)
+mediante la opción **Dashboard**, disponible después de iniciar sesión.
