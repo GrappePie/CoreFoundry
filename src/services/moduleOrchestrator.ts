@@ -15,16 +15,21 @@ export async function checkModules(pruneOfflineMs?: number) {
   const modules = await Module.find();
   const now = Date.now();
 
-  for (const mod of modules) {
-    const pingUrl = new URL('/ping', mod.endpoints.rest).toString();
-    let online = false;
-    try {
-      const res = await fetch(pingUrl);
-      online = res.ok;
-    } catch {
-      online = false;
-    }
+  const results = await Promise.all(
+    modules.map(async (mod) => {
+      const pingUrl = new URL('/ping', mod.endpoints.rest).toString();
+      let online = false;
+      try {
+        const res = await fetch(pingUrl);
+        online = res.ok;
+      } catch {
+        online = false;
+      }
+      return { mod, online };
+    })
+  );
 
+  for (const { mod, online } of results) {
     if (online) {
       await Module.findByIdAndUpdate(mod._id, {
         status: 'online',

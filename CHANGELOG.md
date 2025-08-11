@@ -8,6 +8,9 @@ All notable changes to this project will be documented in this file.
 - AGENTS guideline to record significant changes in `CHANGELOG.md`.
 - Module orchestrator service to monitor registered modules and prune stale entries.
 
+### Changed
+- Module orchestrator now pings modules in parallel before pruning.
+
 ## [0.5.2] - 2025-08-11
 
 ### Added
