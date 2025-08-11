@@ -140,15 +140,18 @@ export async function checkModules(
     }
   }
 
-  let skip = 0;
+  let lastId: any | null = null;
   while (true) {
-    const modules = await Module.find({ deletedAt: { $exists: false } })
+    const query: any = { deletedAt: { $exists: false } };
+    if (lastId) {
+      query._id = { $gt: lastId };
+    }
+    const modules = await Module.find(query)
       .sort({ _id: 1 })
-      .skip(skip)
       .limit(batchSize);
     if (modules.length === 0) break;
     await processBatch(modules);
-    skip += modules.length;
+    lastId = modules[modules.length - 1]._id;
   }
 }
 

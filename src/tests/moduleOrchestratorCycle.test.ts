@@ -18,6 +18,28 @@ const emitted: Array<{ event: string; moduleId: string }> = [];
 
 const wait = (ms: number) => new Promise((res) => setTimeout(res, ms));
 
+function createFindStub(
+  modules: any[],
+  opts: { onCall?: () => void } = {}
+) {
+  return (query: any = {}) => {
+    opts.onCall?.();
+    return {
+      sort: () => ({
+        limit: (l: number) => {
+          const filtered = modules
+            .filter(
+              (m) => !query._id || Number(m._id) > Number(query._id.$gt)
+            )
+            .sort((a, b) => String(a._id).localeCompare(String(b._id)))
+            .slice(0, l);
+          return Promise.resolve(filtered);
+        },
+      }),
+    };
+  };
+}
+
 beforeEach(async () => {
   stopModuleOrchestrator();
   await wait(50);
@@ -31,16 +53,14 @@ describe('module orchestrator cycle control', () => {
     let calls = 0;
     (Module as any).find = () => ({
       sort: () => ({
-        skip: (_s: number) => ({
-          limit: async (_l: number) => {
-            running++;
-            maxRunning = Math.max(maxRunning, running);
-            await wait(80);
-            running--;
-            calls++;
-            return [];
-          },
-        }),
+        limit: async () => {
+          running++;
+          maxRunning = Math.max(maxRunning, running);
+          await wait(80);
+          running--;
+          calls++;
+          return [];
+        },
       }),
     });
 
@@ -59,13 +79,11 @@ describe('module orchestrator cycle control', () => {
     let calls = 0;
     (Module as any).find = () => ({
       sort: () => ({
-        skip: (_s: number) => ({
-          limit: async (_l: number) => {
-            calls++;
-            if (calls === 1) throw new Error('fail');
-            return [];
-          },
-        }),
+        limit: async () => {
+          calls++;
+          if (calls === 1) throw new Error('fail');
+          return [];
+        },
       }),
     });
 
@@ -83,13 +101,11 @@ describe('module orchestrator cycle control', () => {
     let calls = 0;
     (Module as any).find = () => ({
       sort: () => ({
-        skip: (_s: number) => ({
-          limit: async (_l: number) => {
-            calls++;
-            await wait(50);
-            return [];
-          },
-        }),
+        limit: async () => {
+          calls++;
+          await wait(50);
+          return [];
+        },
       }),
     });
 
@@ -113,13 +129,7 @@ describe('module orchestrator cycle control', () => {
           status: 'offline',
         },
       ];
-      (Module as any).find = () => ({
-        sort: () => ({
-          skip: (s: number) => ({
-            limit: async (_l: number) => modules.slice(s, s + _l),
-          }),
-        }),
-      });
+      (Module as any).find = createFindStub(modules);
       (Module as any).findByIdAndUpdate = async (id: any, update: any) => {
         const mod = modules.find((m) => m._id === id);
         Object.assign(mod!, update);
@@ -152,13 +162,7 @@ describe('module orchestrator cycle control', () => {
           status: 'online',
         },
       ];
-      (Module as any).find = () => ({
-        sort: () => ({
-          skip: (s: number) => ({
-            limit: async (_l: number) => modules.slice(s, s + _l),
-          }),
-        }),
-      });
+      (Module as any).find = createFindStub(modules);
       (Module as any).findByIdAndUpdate = async (id: any, update: any) => {
         const mod = modules.find((m) => m._id === id);
         Object.assign(mod!, update);

@@ -10,6 +10,31 @@ import * as eventBus from '../../messaging/eventBus';
 
 let originalFetch: typeof fetch;
 
+function createFindStub(
+  modules: any[],
+  opts: { onCall?: () => void; onSort?: (s: any) => void } = {}
+) {
+  return (query: any = {}) => {
+    opts.onCall?.();
+    return {
+      sort: (s: any) => {
+        opts.onSort?.(s);
+        return {
+          limit: (l: number) => {
+            const filtered = modules
+              .filter(
+                (m) => !query._id || Number(m._id) > Number(query._id.$gt)
+              )
+              .sort((a, b) => String(a._id).localeCompare(String(b._id)))
+              .slice(0, l);
+            return Promise.resolve(filtered);
+          },
+        };
+      },
+    };
+  };
+}
+
 beforeEach(() => {
   originalFetch = global.fetch;
   (eventBus as any).publish = async () => {};
@@ -25,13 +50,7 @@ describe('moduleOrchestrator service', () => {
       { _id: '1', endpoints: { rest: 'http://m1' }, lastHandshake: new Date() },
       { _id: '2', endpoints: { rest: 'http://m2' }, lastHandshake: new Date() },
     ];
-    (Module as any).find = () => ({
-      sort: () => ({
-        skip: (s: number) => ({
-          limit: (l: number) => Promise.resolve(modules.slice(s, s + l)),
-        }),
-      }),
-    });
+    (Module as any).find = createFindStub(modules);
     const updated: string[] = [];
     (Module as any).findByIdAndUpdate = async (id: string) => {
       updated.push(String(id));
@@ -49,13 +68,7 @@ describe('moduleOrchestrator service', () => {
       { _id: '1', endpoints: { rest: 'http://m1' }, lastHandshake: new Date(0) },
       { _id: '2', endpoints: { rest: 'http://m2' }, lastHandshake: new Date() },
     ];
-    (Module as any).find = () => ({
-      sort: () => ({
-        skip: (s: number) => ({
-          limit: (l: number) => Promise.resolve(modules.slice(s, s + l)),
-        }),
-      }),
-    });
+    (Module as any).find = createFindStub(modules);
     const updated: string[] = [];
     (Module as any).findByIdAndUpdate = async (id: string) => {
       updated.push(String(id));
@@ -83,13 +96,7 @@ describe('moduleOrchestrator service', () => {
         status: 'offline',
       },
     ];
-    (Module as any).find = () => ({
-      sort: () => ({
-        skip: (s: number) => ({
-          limit: (l: number) => Promise.resolve(modules.slice(s, s + l)),
-        }),
-      }),
-    });
+    (Module as any).find = createFindStub(modules);
     const updated: Array<{ id: string; status: string }> = [];
     (Module as any).findByIdAndUpdate = async (id: string, update: any) => {
       updated.push({ id: String(id), status: update.status });
@@ -114,13 +121,7 @@ describe('moduleOrchestrator service', () => {
         lastHandshake: new Date(0),
       },
     ];
-    (Module as any).find = () => ({
-      sort: () => ({
-        skip: (s: number) => ({
-          limit: (l: number) => Promise.resolve(modules.slice(s, s + l)),
-        }),
-      }),
-    });
+    (Module as any).find = createFindStub(modules);
     (Module as any).findByIdAndUpdate = async () => {
       throw new Error('should not update');
     };
@@ -146,13 +147,7 @@ describe('moduleOrchestrator service', () => {
       endpoints: { rest: `http://m${i}` },
       lastHandshake: new Date(),
     }));
-    (Module as any).find = () => ({
-      sort: () => ({
-        skip: (s: number) => ({
-          limit: (l: number) => Promise.resolve(modules.slice(s, s + l)),
-        }),
-      }),
-    });
+    (Module as any).find = createFindStub(modules);
     (Module as any).findByIdAndUpdate = async () => {};
     let active = 0;
     let maxActive = 0;
@@ -176,15 +171,10 @@ describe('moduleOrchestrator service', () => {
       lastHandshake: new Date(),
     }));
     let findCalls = 0;
-    (Module as any).find = () => ({
-      sort: () => ({
-        skip: (s: number) => ({
-          limit: (l: number) => {
-            findCalls++;
-            return Promise.resolve(modules.slice(s, s + l));
-          },
-        }),
-      }),
+    (Module as any).find = createFindStub(modules, {
+      onCall: () => {
+        findCalls++;
+      },
     });
     const updated: string[] = [];
     (Module as any).findByIdAndUpdate = async (id: string) => {
@@ -205,15 +195,9 @@ describe('moduleOrchestrator service', () => {
       { _id: 'c', endpoints: { rest: 'http://m3' }, lastHandshake: new Date() },
     ];
     let sortOptions: any = null;
-    (Module as any).find = () => ({
-      sort: (s: any) => {
+    (Module as any).find = createFindStub(modules, {
+      onSort: (s) => {
         sortOptions = s;
-        modules.sort((x, y) => String(x._id).localeCompare(String(y._id)));
-        return {
-          skip: (sk: number) => ({
-            limit: (l: number) => Promise.resolve(modules.slice(sk, sk + l)),
-          }),
-        };
       },
     });
     const processed: string[] = [];
@@ -232,13 +216,7 @@ describe('moduleOrchestrator service', () => {
     const modules = [
       { _id: '1', endpoints: { rest: 'http://m1' }, lastHandshake: new Date() },
     ];
-    (Module as any).find = () => ({
-      sort: () => ({
-        skip: (s: number) => ({
-          limit: (l: number) => Promise.resolve(modules.slice(s, s + l)),
-        }),
-      }),
-    });
+    (Module as any).find = createFindStub(modules);
     (Module as any).findByIdAndUpdate = async () => {};
     const durations: number[] = [];
     global.fetch = async (_: string, init: any) =>
@@ -260,13 +238,7 @@ describe('moduleOrchestrator service', () => {
     const modules = [
       { _id: '1', endpoints: { rest: 'http://m1' }, lastHandshake: new Date() },
     ];
-    (Module as any).find = () => ({
-      sort: () => ({
-        skip: (s: number) => ({
-          limit: (l: number) => Promise.resolve(modules.slice(s, s + l)),
-        }),
-      }),
-    });
+    (Module as any).find = createFindStub(modules);
     (Module as any).findByIdAndUpdate = async () => {};
     const durations: number[] = [];
     global.fetch = async (_: string, init: any) =>

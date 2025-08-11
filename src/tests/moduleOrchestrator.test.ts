@@ -16,17 +16,16 @@ let modules: any[] = [];
 
 (Module as any).find = (filter: any = {}) => ({
   sort: () => ({
-    skip: (s: number) => ({
-      limit: (l: number) =>
-        Promise.resolve(
-          modules
-            .filter((m) =>
-              filter.deletedAt?.$exists === false ? !('deletedAt' in m) : true
-            )
-            .sort((a, b) => String(a._id).localeCompare(String(b._id)))
-            .slice(s, s + l)
-        ),
-    }),
+    limit: (l: number) =>
+      Promise.resolve(
+        modules
+          .filter((m) =>
+            (filter.deletedAt?.$exists === false ? !('deletedAt' in m) : true) &&
+            (!filter._id || Number(m._id) > Number(filter._id.$gt))
+          )
+          .sort((a, b) => String(a._id).localeCompare(String(b._id)))
+          .slice(0, l)
+      ),
   }),
 });
 (Module as any).findByIdAndUpdate = async (id: any, update: any) => {
