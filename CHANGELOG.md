@@ -14,6 +14,7 @@ All notable changes to this project will be documented in this file.
 - Module orchestrator now pings modules in parallel before pruning.
 - Module orchestrator pings now have a timeout using `AbortController` to mark modules offline on timeout.
 - Module orchestrator uses the logging utility instead of `console`.
+- Module orchestrator paginates using `_id` cursors instead of `skip` for improved efficiency.
 
 ### Fixed
 - Module orchestrator marks modules offline and skips ping when their `rest` endpoint URL is invalid.
