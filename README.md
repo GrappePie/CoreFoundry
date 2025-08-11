@@ -301,6 +301,7 @@ Consulta [docs/security.md](./docs/security.md) para más detalles sobre la conf
 - **Build producción**: `npm run build && npm start`  
 - **Lint**: `npm run lint`  
 - **Tests**: `npm run test`  
+- **CLI de Módulos**: `npx module-cli init <nombre>` – crea la estructura base de un módulo [guía](./docs/module-cli.md)
 
 ---
 
