@@ -2,6 +2,9 @@ import { describe, it, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 import Module from '../models/Module';
 import { startModuleOrchestrator, stopModuleOrchestrator } from '../services/moduleOrchestrator';
+import * as eventBus from '../messaging/eventBus';
+
+(eventBus as any).publish = async () => {};
 
 const wait = (ms: number) => new Promise((res) => setTimeout(res, ms));
 

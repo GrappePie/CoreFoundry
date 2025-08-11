@@ -1,4 +1,5 @@
 import Module from '../models/Module';
+import * as eventBus from '../messaging/eventBus';
 
 let timer: NodeJS.Timeout | null = null;
 let isRunning = false;
@@ -56,6 +57,12 @@ export async function checkModules(
         status: 'online',
         lastHandshake: new Date(),
       });
+      console.info(`Module ${mod._id} is online`);
+      try {
+        await eventBus.publish('module.online', { moduleId: String(mod._id) });
+      } catch (err) {
+        console.error('Failed to publish module.online event', err);
+      }
     } else {
       if (
         pruneOfflineMs &&
@@ -63,9 +70,21 @@ export async function checkModules(
         now - new Date(mod.lastHandshake).getTime() > pruneOfflineMs
       ) {
         await Module.deleteOne({ _id: mod._id });
+        console.info(`Module ${mod._id} removed after exceeding offline threshold`);
+        try {
+          await eventBus.publish('module.removed', { moduleId: String(mod._id) });
+        } catch (err) {
+          console.error('Failed to publish module.removed event', err);
+        }
         continue;
       }
       await Module.findByIdAndUpdate(mod._id, { status: 'offline' });
+      console.info(`Module ${mod._id} is offline`);
+      try {
+        await eventBus.publish('module.offline', { moduleId: String(mod._id) });
+      } catch (err) {
+        console.error('Failed to publish module.offline event', err);
+      }
     }
   }
 }

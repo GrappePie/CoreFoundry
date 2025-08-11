@@ -13,3 +13,13 @@ A **command** conveys an explicit request for an action. Unlike events, commands
 ## Saga
 
 A **saga** coordinates a long‑running transaction across multiple services using a series of local transactions and compensating actions. Each step publishes events or commands that trigger the next step. If a step fails, compensating commands roll back previous actions to maintain consistency.
+
+## Module status events
+
+The module orchestrator emits events to notify other services when module availability changes:
+
+- `module.online` – published after a successful ping.
+- `module.offline` – published when a module becomes unreachable.
+- `module.removed` – published when a module is pruned for being offline too long.
+
+Each event payload contains the `moduleId` of the affected module.
