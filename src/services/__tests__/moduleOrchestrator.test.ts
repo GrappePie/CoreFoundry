@@ -58,6 +58,60 @@ describe('moduleOrchestrator service', () => {
     assert.deepEqual(updated, ['2']);
   });
 
+  it('publishes module.online when an offline module responds', async () => {
+    const modules = [
+      {
+        _id: '1',
+        endpoints: { rest: 'http://m1' },
+        lastHandshake: new Date(0),
+        status: 'offline',
+      },
+    ];
+    (Module as any).find = async () => modules;
+    const updated: Array<{ id: string; status: string }> = [];
+    (Module as any).findByIdAndUpdate = async (id: string, update: any) => {
+      updated.push({ id: String(id), status: update.status });
+    };
+    global.fetch = async () => ({ ok: true }) as any;
+    const events: Array<{ event: string; payload: any }> = [];
+    (eventBus as any).publish = async (event: string, payload: any) => {
+      events.push({ event, payload });
+    };
+
+    await checkModules();
+
+    assert.deepEqual(updated, [{ id: '1', status: 'online' }]);
+    assert.deepEqual(events, [{ event: 'module.online', payload: { moduleId: '1' } }]);
+  });
+
+  it('removes modules exceeding pruneOfflineMs and emits module.removed', async () => {
+    const modules = [
+      {
+        _id: '1',
+        endpoints: { rest: 'http://m1' },
+        lastHandshake: new Date(0),
+      },
+    ];
+    (Module as any).find = async () => modules;
+    (Module as any).findByIdAndUpdate = async () => {
+      throw new Error('should not update');
+    };
+    const deleted: string[] = [];
+    (Module as any).deleteOne = async (query: any) => {
+      deleted.push(String(query._id));
+    };
+    global.fetch = async () => ({ ok: false }) as any;
+    const events: Array<{ event: string; payload: any }> = [];
+    (eventBus as any).publish = async (event: string, payload: any) => {
+      events.push({ event, payload });
+    };
+
+    await checkModules(1);
+
+    assert.deepEqual(deleted, ['1']);
+    assert.deepEqual(events, [{ event: 'module.removed', payload: { moduleId: '1' } }]);
+  });
+
   it('respects maxConcurrentPings limit', async () => {
     const modules = Array.from({ length: 20 }, (_, i) => ({
       _id: String(i),
