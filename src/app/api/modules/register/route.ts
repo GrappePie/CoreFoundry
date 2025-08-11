@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import { registerModule } from '@/services/moduleDiscovery';
+import { verifyToken } from '@/auth';
 import { z } from 'zod';
 
 const registerSchema = z.object({
@@ -27,6 +28,23 @@ export async function POST(req: Request) {
   await dbConnect();
 
   try {
+    const authHeader = req.headers.get('authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return NextResponse.json(
+        { status: 'unauthorized', error: 'Missing or invalid token' },
+        { status: 401 }
+      );
+    }
+
+    const token = authHeader.split(' ')[1];
+    const payload = verifyToken(token) as { userId?: string } | null;
+    if (!payload || typeof payload.userId !== 'string') {
+      return NextResponse.json(
+        { status: 'unauthorized', error: 'Invalid token' },
+        { status: 401 }
+      );
+    }
+
     const body = await req.json();
     const parse = registerSchema.safeParse(body);
     if (!parse.success) {
@@ -37,6 +55,13 @@ export async function POST(req: Request) {
     }
 
     const data = parse.data;
+    if (payload.userId !== data.ownerId) {
+      return NextResponse.json(
+        { status: 'forbidden', error: 'Owner mismatch' },
+        { status: 403 }
+      );
+    }
+
     const compatibleVersion = isCompatible(data.version);
 
     if (!compatibleVersion) {
@@ -58,7 +83,7 @@ export async function POST(req: Request) {
         status = 'online';
         lastHandshake = new Date();
       }
-    } catch (err) {
+    } catch {
       // Module unreachable, keep status offline
     }
 
