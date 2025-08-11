@@ -116,6 +116,26 @@ Cada módulo debe proporcionar un **manifest** JSON con metadatos clave (nombre,
 }
 ```
 
+### Validación y manejo de errores
+
+`validateManifest` devuelve `false` si el manifest no cumple el contrato y
+expone los detalles de validación en `validateManifest.errors`. Cada error
+incluye un `instancePath` con la ruta al campo problemático y un `message`
+legible. Se recomienda transformar estos objetos en mensajes claros antes de
+mostrarlos a los autores del módulo:
+
+```ts
+if (!validateManifest(manifest)) {
+  const msgs = (validateManifest.errors ?? []).map(
+    (e) => `${e.instancePath || e.params.missingProperty}: ${e.message}`,
+  );
+  throw new Error(`Manifest inválido:\n${msgs.join('\n')}`);
+}
+```
+
+También puede utilizarse `ajv.errorsText(validateManifest.errors)` para generar
+un resumen legible de todos los problemas detectados.
+
 ## 🔍 Descubrimiento y Comunicación
 
 - **Registro inicial**: los módulos se registran vía HTTP enviando su manifest.

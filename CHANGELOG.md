@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.5.2] - 2025-08-11
+
+### Added
+- Guidance on interpreting and presenting `validateManifest.errors`
+
+## [0.5.1] - 2025-08-10
+
+### Added
+- Tests for module manifest validation and model pre-save hook
+
 ## [0.5.0] - 2025-08-03
 
 ### Added
