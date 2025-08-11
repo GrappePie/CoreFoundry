@@ -25,7 +25,11 @@ describe('moduleOrchestrator service', () => {
       { _id: '1', endpoints: { rest: 'http://m1' }, lastHandshake: new Date() },
       { _id: '2', endpoints: { rest: 'http://m2' }, lastHandshake: new Date() },
     ];
-    (Module as any).find = async () => modules;
+    (Module as any).find = () => ({
+      skip: (s: number) => ({
+        limit: (l: number) => Promise.resolve(modules.slice(s, s + l)),
+      }),
+    });
     const updated: string[] = [];
     (Module as any).findByIdAndUpdate = async (id: string) => {
       updated.push(String(id));
@@ -43,7 +47,11 @@ describe('moduleOrchestrator service', () => {
       { _id: '1', endpoints: { rest: 'http://m1' }, lastHandshake: new Date(0) },
       { _id: '2', endpoints: { rest: 'http://m2' }, lastHandshake: new Date() },
     ];
-    (Module as any).find = async () => modules;
+    (Module as any).find = () => ({
+      skip: (s: number) => ({
+        limit: (l: number) => Promise.resolve(modules.slice(s, s + l)),
+      }),
+    });
     const updated: string[] = [];
     (Module as any).findByIdAndUpdate = async (id: string) => {
       updated.push(String(id));
@@ -71,7 +79,11 @@ describe('moduleOrchestrator service', () => {
         status: 'offline',
       },
     ];
-    (Module as any).find = async () => modules;
+    (Module as any).find = () => ({
+      skip: (s: number) => ({
+        limit: (l: number) => Promise.resolve(modules.slice(s, s + l)),
+      }),
+    });
     const updated: Array<{ id: string; status: string }> = [];
     (Module as any).findByIdAndUpdate = async (id: string, update: any) => {
       updated.push({ id: String(id), status: update.status });
@@ -96,7 +108,11 @@ describe('moduleOrchestrator service', () => {
         lastHandshake: new Date(0),
       },
     ];
-    (Module as any).find = async () => modules;
+    (Module as any).find = () => ({
+      skip: (s: number) => ({
+        limit: (l: number) => Promise.resolve(modules.slice(s, s + l)),
+      }),
+    });
     (Module as any).findByIdAndUpdate = async () => {
       throw new Error('should not update');
     };
@@ -122,7 +138,11 @@ describe('moduleOrchestrator service', () => {
       endpoints: { rest: `http://m${i}` },
       lastHandshake: new Date(),
     }));
-    (Module as any).find = async () => modules;
+    (Module as any).find = () => ({
+      skip: (s: number) => ({
+        limit: (l: number) => Promise.resolve(modules.slice(s, s + l)),
+      }),
+    });
     (Module as any).findByIdAndUpdate = async () => {};
     let active = 0;
     let maxActive = 0;
@@ -139,11 +159,42 @@ describe('moduleOrchestrator service', () => {
     assert.ok(maxActive <= 5);
   });
 
+  it('iterates over multiple batches', async () => {
+    const modules = Array.from({ length: 120 }, (_, i) => ({
+      _id: String(i),
+      endpoints: { rest: `http://m${i}` },
+      lastHandshake: new Date(),
+    }));
+    let findCalls = 0;
+    (Module as any).find = () => ({
+      skip: (s: number) => ({
+        limit: (l: number) => {
+          findCalls++;
+          return Promise.resolve(modules.slice(s, s + l));
+        },
+      }),
+    });
+    const updated: string[] = [];
+    (Module as any).findByIdAndUpdate = async (id: string) => {
+      updated.push(String(id));
+    };
+    global.fetch = async () => ({ ok: true }) as any;
+
+    await checkModules();
+
+    assert.equal(findCalls, 3);
+    assert.equal(updated.length, modules.length);
+  });
+
   it('aborts ping after pingTimeoutMs', async () => {
     const modules = [
       { _id: '1', endpoints: { rest: 'http://m1' }, lastHandshake: new Date() },
     ];
-    (Module as any).find = async () => modules;
+    (Module as any).find = () => ({
+      skip: (s: number) => ({
+        limit: (l: number) => Promise.resolve(modules.slice(s, s + l)),
+      }),
+    });
     (Module as any).findByIdAndUpdate = async () => {};
     const durations: number[] = [];
     global.fetch = async (_: string, init: any) =>
@@ -165,7 +216,11 @@ describe('moduleOrchestrator service', () => {
     const modules = [
       { _id: '1', endpoints: { rest: 'http://m1' }, lastHandshake: new Date() },
     ];
-    (Module as any).find = async () => modules;
+    (Module as any).find = () => ({
+      skip: (s: number) => ({
+        limit: (l: number) => Promise.resolve(modules.slice(s, s + l)),
+      }),
+    });
     (Module as any).findByIdAndUpdate = async () => {};
     const durations: number[] = [];
     global.fetch = async (_: string, init: any) =>

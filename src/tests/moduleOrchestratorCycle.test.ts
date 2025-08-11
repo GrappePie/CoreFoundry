@@ -18,14 +18,18 @@ describe('module orchestrator cycle control', () => {
     let running = 0;
     let maxRunning = 0;
     let calls = 0;
-    (Module as any).find = async () => {
-      running++;
-      maxRunning = Math.max(maxRunning, running);
-      await wait(80);
-      running--;
-      calls++;
-      return [];
-    };
+    (Module as any).find = () => ({
+      skip: (_s: number) => ({
+        limit: async (_l: number) => {
+          running++;
+          maxRunning = Math.max(maxRunning, running);
+          await wait(80);
+          running--;
+          calls++;
+          return [];
+        },
+      }),
+    });
 
     startModuleOrchestrator({ intervalMs: 10 });
     await wait(5);
@@ -40,11 +44,15 @@ describe('module orchestrator cycle control', () => {
 
   it('recovers and schedules new cycle after errors', async () => {
     let calls = 0;
-    (Module as any).find = async () => {
-      calls++;
-      if (calls === 1) throw new Error('fail');
-      return [];
-    };
+    (Module as any).find = () => ({
+      skip: (_s: number) => ({
+        limit: async (_l: number) => {
+          calls++;
+          if (calls === 1) throw new Error('fail');
+          return [];
+        },
+      }),
+    });
 
     startModuleOrchestrator({ intervalMs: 10 });
     await wait(1);
@@ -58,11 +66,15 @@ describe('module orchestrator cycle control', () => {
 
   it('stops scheduling when stopped mid-cycle', async () => {
     let calls = 0;
-    (Module as any).find = async () => {
-      calls++;
-      await wait(50);
-      return [];
-    };
+    (Module as any).find = () => ({
+      skip: (_s: number) => ({
+        limit: async (_l: number) => {
+          calls++;
+          await wait(50);
+          return [];
+        },
+      }),
+    });
 
     startModuleOrchestrator({ intervalMs: 10 });
     await wait(5);
