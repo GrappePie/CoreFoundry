@@ -1,6 +1,6 @@
 import mongoose, { Schema, Document, models } from 'mongoose';
 import mongoosePaginate from 'mongoose-paginate-v2';
-import { ModuleManifest, validateManifest } from '../lib/moduleManifest';
+import { ModuleManifest, approveManifest } from '../lib/moduleManifest';
 
 export interface IModule extends Document {
   name: string;
@@ -34,8 +34,8 @@ const ModuleSchema: Schema = new Schema({
 }, { timestamps: true });
 
 // Validate module manifest
-ModuleSchema.pre('save', function(next) {
-  if (!validateManifest(this.manifest as ModuleManifest)) {
+ModuleSchema.pre('save', async function(next) {
+  if (!(await approveManifest(this.manifest as ModuleManifest))) {
     return next(new Error('Invalid module manifest'));
   }
   next();
