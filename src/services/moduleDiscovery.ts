@@ -20,8 +20,8 @@ export interface RegisterModuleInput {
  */
 export async function registerModule(data: RegisterModuleInput) {
   const integrationToken = crypto.randomBytes(32).toString('hex');
-  const module = await Module.create({ ...data, integrationToken });
-  return { module, integrationToken };
+  const savedModule = await Module.create({ ...data, integrationToken });
+  return { module: savedModule, integrationToken };
 }
 
 /**
