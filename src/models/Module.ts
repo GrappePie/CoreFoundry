@@ -1,6 +1,6 @@
 import mongoose, { Schema, Document, models } from 'mongoose';
 import mongoosePaginate from 'mongoose-paginate-v2';
-import { ModuleManifest, validateManifest } from '../lib/moduleManifest';
+import { ModuleManifest, approveManifest } from '../lib/moduleManifest';
 
 export interface IModule extends Document {
   name: string;
@@ -12,6 +12,9 @@ export interface IModule extends Document {
     rest: string;
     ws?: string;
   };
+  status: 'online' | 'offline';
+  lastHandshake?: Date;
+  compatibleVersion: boolean;
 }
 
 const ModuleSchema: Schema = new Schema({
@@ -24,12 +27,15 @@ const ModuleSchema: Schema = new Schema({
     rest: { type: String, required: true },
     ws: { type: String },
   },
+  status: { type: String, enum: ['online', 'offline'], default: 'offline' },
+  lastHandshake: Date,
+  compatibleVersion: { type: Boolean, default: false },
   deletedAt: Date,
 }, { timestamps: true });
 
 // Validate module manifest
-ModuleSchema.pre('save', function(next) {
-  if (!validateManifest(this.manifest as ModuleManifest)) {
+ModuleSchema.pre('save', async function(next) {
+  if (!(await approveManifest(this.manifest as ModuleManifest))) {
     return next(new Error('Invalid module manifest'));
   }
   next();
