@@ -20,6 +20,11 @@ const modules: any[] = [
     endpoints: { rest: 'https://m3.local/api' },
     status: 'offline',
   },
+  {
+    _id: '4',
+    endpoints: { rest: 'invalid-url' },
+    status: 'online',
+  },
 ];
 
 (Module as any).find = async () => modules;
@@ -55,13 +60,16 @@ const modules: any[] = [
 describe('moduleOrchestrator service', () => {
   it('updates module status and prunes long-term offline modules', async () => {
     await checkModules(30 * 24 * 60 * 60 * 1000, 50);
-    assert.equal(modules.length, 2);
+    assert.equal(modules.length, 3);
     const m1 = modules.find((m) => m._id === '1');
     const m3 = modules.find((m) => m._id === '3');
+    const m4 = modules.find((m) => m._id === '4');
     assert(m1);
     assert(m3);
+    assert(m4);
     assert.equal(m1.status, 'online');
     assert(m1.lastHandshake instanceof Date);
     assert.equal(m3.status, 'offline');
+    assert.equal(m4.status, 'offline');
   });
 });
