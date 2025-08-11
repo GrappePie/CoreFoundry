@@ -1,25 +1,27 @@
-import Broker from "../lib/broker";
+import { randomUUID } from "crypto";
+import * as rabbitmq from "../lib/rabbitmq";
 
 export interface Event<T> {
   type: string;
   payload: T;
 }
 
-const broker = new Broker();
-
 /**
- * Publish an event using the underlying Broker instance.
+ * Publish an event to the default exchange.
  */
-export function publish<T>(type: string, payload: T): Promise<void> {
-  return broker.publish(type, payload);
+export async function publish<T>(type: string, payload: T): Promise<void> {
+  await rabbitmq.publish(rabbitmq.EXCHANGE_NAME, type, payload);
 }
 
 /**
- * Subscribe to a given event type.
+ * Subscribe to a given event type using a unique queue per subscriber.
  */
-export function subscribe<T>(
+export async function subscribe<T>(
   type: string,
   handler: (payload: T) => Promise<void> | void,
-): void {
-  broker.subscribe(type, handler);
+): Promise<void> {
+  const queue = `${type}.${randomUUID()}`;
+  await rabbitmq.subscribe(queue, rabbitmq.EXCHANGE_NAME, type, async (payload: T) => {
+    await handler(payload);
+  });
 }
