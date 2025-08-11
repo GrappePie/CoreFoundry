@@ -1,16 +1,27 @@
 import { describe, it, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 import Module from '../models/Module';
-import { startModuleOrchestrator, stopModuleOrchestrator } from '../services/moduleOrchestrator';
+import {
+  checkModules,
+  startModuleOrchestrator,
+  stopModuleOrchestrator,
+} from '../services/moduleOrchestrator';
 import * as eventBus from '../messaging/eventBus';
 
-(eventBus as any).publish = async () => {};
+const emitted: Array<{ event: string; moduleId: string }> = [];
+(eventBus as any).publish = async (
+  event: string,
+  payload: { moduleId: string }
+) => {
+  emitted.push({ event, moduleId: payload.moduleId });
+};
 
 const wait = (ms: number) => new Promise((res) => setTimeout(res, ms));
 
 beforeEach(async () => {
   stopModuleOrchestrator();
   await wait(50);
+  emitted.length = 0;
 });
 
 describe('module orchestrator cycle control', () => {
@@ -82,5 +93,79 @@ describe('module orchestrator cycle control', () => {
     await wait(100);
 
     assert.equal(calls, 1);
+  });
+
+  it('emits module.online only when status changes', async () => {
+    const originalFind = Module.find;
+    const originalFindByIdAndUpdate = (Module as any).findByIdAndUpdate;
+    const originalFetch = global.fetch;
+    try {
+      const modules = [
+        {
+          _id: '1',
+          endpoints: { rest: 'https://m1.local/api' },
+          status: 'offline',
+        },
+      ];
+      (Module as any).find = () => ({
+        skip: (s: number) => ({
+          limit: async (_l: number) => modules.slice(s, s + _l),
+        }),
+      });
+      (Module as any).findByIdAndUpdate = async (id: any, update: any) => {
+        const mod = modules.find((m) => m._id === id);
+        Object.assign(mod!, update);
+        return mod;
+      };
+      (global as any).fetch = async () => ({ ok: true } as any);
+
+      await checkModules(undefined, 50);
+      assert.deepEqual(emitted, [{ event: 'module.online', moduleId: '1' }]);
+
+      emitted.length = 0;
+      await checkModules(undefined, 50);
+      assert.deepEqual(emitted, []);
+    } finally {
+      (Module as any).find = originalFind;
+      (Module as any).findByIdAndUpdate = originalFindByIdAndUpdate;
+      global.fetch = originalFetch;
+    }
+  });
+
+  it('emits module.offline only when status changes', async () => {
+    const originalFind = Module.find;
+    const originalFindByIdAndUpdate = (Module as any).findByIdAndUpdate;
+    const originalFetch = global.fetch;
+    try {
+      const modules = [
+        {
+          _id: '1',
+          endpoints: { rest: 'https://m1.local/api' },
+          status: 'online',
+        },
+      ];
+      (Module as any).find = () => ({
+        skip: (s: number) => ({
+          limit: async (_l: number) => modules.slice(s, s + _l),
+        }),
+      });
+      (Module as any).findByIdAndUpdate = async (id: any, update: any) => {
+        const mod = modules.find((m) => m._id === id);
+        Object.assign(mod!, update);
+        return mod;
+      };
+      (global as any).fetch = async () => ({ ok: false } as any);
+
+      await checkModules(undefined, 50);
+      assert.deepEqual(emitted, [{ event: 'module.offline', moduleId: '1' }]);
+
+      emitted.length = 0;
+      await checkModules(undefined, 50);
+      assert.deepEqual(emitted, []);
+    } finally {
+      (Module as any).find = originalFind;
+      (Module as any).findByIdAndUpdate = originalFindByIdAndUpdate;
+      global.fetch = originalFetch;
+    }
   });
 });

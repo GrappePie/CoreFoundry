@@ -77,6 +77,7 @@ export async function checkModules(
       if (!result) continue;
       const { mod, online } = result;
       if (online) {
+        const wasOnline = mod.status === 'online';
         try {
           await Module.findByIdAndUpdate(mod._id, {
             status: 'online',
@@ -87,10 +88,12 @@ export async function checkModules(
           continue;
         }
         logger.info(`Module ${mod._id} is online`);
-        try {
-          await eventBus.publish('module.online', { moduleId: String(mod._id) });
-        } catch (err) {
-          logger.error('Failed to publish module.online event', err);
+        if (!wasOnline) {
+          try {
+            await eventBus.publish('module.online', { moduleId: String(mod._id) });
+          } catch (err) {
+            logger.error('Failed to publish module.online event', err);
+          }
         }
       } else {
         if (
@@ -112,10 +115,11 @@ export async function checkModules(
               moduleId: String(mod._id),
             });
           } catch (err) {
-            logger.error('Failed to publish module.removed event', err);
-          }
-          continue;
+          logger.error('Failed to publish module.removed event', err);
         }
+        continue;
+      }
+        const wasOffline = mod.status === 'offline';
         try {
           await Module.findByIdAndUpdate(mod._id, { status: 'offline' });
         } catch (err) {
@@ -123,12 +127,14 @@ export async function checkModules(
           continue;
         }
         logger.info(`Module ${mod._id} is offline`);
-        try {
-          await eventBus.publish('module.offline', {
-            moduleId: String(mod._id),
-          });
-        } catch (err) {
-          logger.error('Failed to publish module.offline event', err);
+        if (!wasOffline) {
+          try {
+            await eventBus.publish('module.offline', {
+              moduleId: String(mod._id),
+            });
+          } catch (err) {
+            logger.error('Failed to publish module.offline event', err);
+          }
         }
       }
     }
