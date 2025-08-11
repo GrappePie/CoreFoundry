@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import mongoose from 'mongoose';
 import Module from '../../models/Module';
 import { validateManifest, ModuleManifest } from '../moduleManifest';
+import SchemaDefinition from '../../services/schemaRegistry/schemaDefinition.model';
 
 // Helper to run Mongoose pre-save hooks without DB
 function runPreSave(doc: any) {
@@ -79,6 +80,9 @@ describe('validateManifest', () => {
     assert.equal(validateManifest(manifest), false);
   });
 });
+
+// Stub schema registry to avoid DB interactions during tests
+(SchemaDefinition as any).updateOne = async () => {};
 
 describe('ModuleSchema pre-save', () => {
   it('allows saving with valid manifest', async () => {
