@@ -2,6 +2,27 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.5.2] - 2025-08-11
+
+### Added
+- Guidance on interpreting and presenting `validateManifest.errors`
+
+## [0.5.1] - 2025-08-10
+
+### Added
+- Tests for module manifest validation and model pre-save hook
+
+## [0.5.0] - 2025-08-03
+
+### Added
+- Module manifest schema and validation
+  - `src/lib/moduleManifest.ts` defines the manifest contract and AJV validation
+  - `Module` model now includes `version` and `manifest` fields
+- Architecture updated with `Schema Registry` and manifest documentation in README
+
+### Changed
+- Expanded README with module contracts, discovery flow and message broker usage
+
 ## [0.2.0] - 2025-08-02
 
 ### Added

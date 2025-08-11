@@ -29,6 +29,7 @@ flowchart LR
     SubscriptionService("Servicio de Suscripciones")
     ValidationService("Validación AJV")
     AuditService("Servicio de Auditoría")
+    SchemaRegistry("Schema Registry")
     WS("WebSocket / Realtime")
     subgraph Módulos
       InventoryModule("Módulo Inventario")
@@ -63,9 +64,15 @@ flowchart LR
   SubscriptionService <--> CentralDB
   CoreModule <--> ValidationService
   ValidationService <--> CentralDB
-  CoreModule <--> AuditService
-  AuditService <--> CentralDB
-  Browser <-->|WS| LB
+    CoreModule <--> AuditService
+    AuditService <--> CentralDB
+    CoreModule <--> SchemaRegistry
+    SchemaRegistry <--> InventoryModule
+    SchemaRegistry <--> SalesModule
+    SchemaRegistry <--> ProductionModule
+    SchemaRegistry <--> BillingModule
+    SchemaRegistry <--> LogisticsModule
+    Browser <-->|WS| LB
   LB <-->|WS| WS
   WS <--> CoreModule
   CoreModule <--> InventoryModule
@@ -90,6 +97,52 @@ flowchart LR
   Monitoring <--> Broker
   Monitoring <--> Cache
 ```
+
+---
+
+## 🧾 Contrato y Versionado de Módulos
+
+Cada módulo debe proporcionar un **manifest** JSON con metadatos clave (nombre, versión, endpoints, esquemas y eventos). El Módulo Central valida este manifest con AJV y lo almacena en un **Schema Registry** para facilitar la compatibilidad entre versiones.
+
+### Ejemplo de `module.manifest.json`
+
+```json
+{
+  "name": "inventory",
+  "version": "1.0.0",
+  "endpoints": { "rest": "https://inventory.local/api" },
+  "schemas": { "product": { "$id": "#/product", "type": "object" } },
+  "events": { "publish": ["stock.updated"], "subscribe": ["order.created"] }
+}
+```
+
+### Validación y manejo de errores
+
+`validateManifest` devuelve `false` si el manifest no cumple el contrato y
+expone los detalles de validación en `validateManifest.errors`. Cada error
+incluye un `instancePath` con la ruta al campo problemático y un `message`
+legible. Se recomienda transformar estos objetos en mensajes claros antes de
+mostrarlos a los autores del módulo:
+
+```ts
+if (!validateManifest(manifest)) {
+  const msgs = (validateManifest.errors ?? []).map(
+    (e) => `${e.instancePath || e.params.missingProperty}: ${e.message}`,
+  );
+  throw new Error(`Manifest inválido:\n${msgs.join('\n')}`);
+}
+```
+
+También puede utilizarse `ajv.errorsText(validateManifest.errors)` para generar
+un resumen legible de todos los problemas detectados.
+
+## 🔍 Descubrimiento y Comunicación
+
+- **Registro inicial**: los módulos se registran vía HTTP enviando su manifest.
+- **Schema Registry**: expone los esquemas y versiones para que otros módulos puedan consultarlos.
+- **Broker de mensajes**: los eventos de negocio se publican/suscriben mediante RabbitMQ/Kafka.
+- **Endpoints HTTP**: se usan para operaciones sincrónicas declaradas en el manifest.
+- **Seguridad**: los tokens y permisos se propagan entre módulos y se auditan todas las llamadas.
 
 ---
 
@@ -181,10 +234,11 @@ El **Módulo Central** gestiona:
 
 ## 🧩 Características Principales
 
-- 📦 **Módulo Central**: orquesta usuarios, suscripciones, módulos y conexiones.  
-- 🔗 **Conexiones Seguras**: define flujos entre módulos usando datos validados por AJV.  
-- 🧱 **Modularidad Extrema**: cada módulo dispone de su esquema, endpoints y UI propios.  
-- 🔒 **Seguridad y Auditaría**: JWT en cada request, cifrado HTTPS/WSS, logs de auditoría (acción, payload, resultado, IP, userAgent).  
+- 📦 **Módulo Central**: orquesta usuarios, suscripciones, módulos y conexiones.
+- 🔗 **Conexiones Seguras**: define flujos entre módulos usando datos validados por AJV.
+- 🧱 **Modularidad Extrema**: cada módulo dispone de su esquema, endpoints y UI propios.
+- 📄 **Manifest de Módulos**: contrato versionado con endpoints, esquemas y eventos.
+- 🔒 **Seguridad y Auditaría**: JWT en cada request, cifrado HTTPS/WSS, logs de auditoría (acción, payload, resultado, IP, userAgent).
 - 📊 **Logs TTL**: los registros de auditoría expiran automáticamente tras 30 días.  
 - 💬 **Componentes UX**: Chat en tiempo real (ChatWidget), scroll infinito (InfiniteScroller), menús de usuario (AuthMenu), formularios de auth (AuthForm).  
 - 📄 **Páginas Estáticas**: landing, privacidad, términos, perfil.
@@ -199,7 +253,7 @@ El **Módulo Central** gestiona:
 │   ├── app/               # Rutas, layouts y API routes
 │   ├── components/        # Componentes React compartidos (AuthForm, AuthMenu, ChatWidget...)
 │   ├── hooks/             # Hooks personalizados (useAuth, useModules...)
-│   ├── lib/               # Utilidades (conexión Mongo, validaciones AJV)
+│   ├── lib/               # Utilidades (conexión Mongo, manifest de módulos)
 │   ├── models/            # Esquemas Mongoose (User, Module, ModuleLink, AuditLog)
 │   └── store/             # Zustand stores
 ├── public/                # Assets estáticos
