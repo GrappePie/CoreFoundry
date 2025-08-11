@@ -59,10 +59,15 @@ export async function checkModules(
     if (!result) continue;
     const { mod, online } = result;
     if (online) {
-      await Module.findByIdAndUpdate(mod._id, {
-        status: 'online',
-        lastHandshake: new Date(),
-      });
+      try {
+        await Module.findByIdAndUpdate(mod._id, {
+          status: 'online',
+          lastHandshake: new Date(),
+        });
+      } catch (err) {
+        logger.error('Failed to update module to online', mod._id, err);
+        continue;
+      }
       logger.info(`Module ${mod._id} is online`);
       try {
         await eventBus.publish('module.online', { moduleId: String(mod._id) });
@@ -75,7 +80,12 @@ export async function checkModules(
         mod.lastHandshake &&
         now - new Date(mod.lastHandshake).getTime() > pruneOfflineMs
       ) {
-        await Module.deleteOne({ _id: mod._id });
+        try {
+          await Module.deleteOne({ _id: mod._id });
+        } catch (err) {
+          logger.error('Failed to delete module', mod._id, err);
+          continue;
+        }
         logger.info(`Module ${mod._id} removed after exceeding offline threshold`);
         try {
           await eventBus.publish('module.removed', { moduleId: String(mod._id) });
@@ -84,7 +94,12 @@ export async function checkModules(
         }
         continue;
       }
-      await Module.findByIdAndUpdate(mod._id, { status: 'offline' });
+      try {
+        await Module.findByIdAndUpdate(mod._id, { status: 'offline' });
+      } catch (err) {
+        logger.error('Failed to update module to offline', mod._id, err);
+        continue;
+      }
       logger.info(`Module ${mod._id} is offline`);
       try {
         await eventBus.publish('module.offline', { moduleId: String(mod._id) });
