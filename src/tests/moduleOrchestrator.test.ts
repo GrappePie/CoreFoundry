@@ -137,4 +137,27 @@ describe('moduleOrchestrator service', () => {
     assert.equal(m2.lastHandshake, undefined);
     assert.deepEqual(emitted, [{ event: 'module.online', moduleId: '1' }]);
   });
+
+  it('limits parallel pings to maxConcurrentPings', async () => {
+    modules = Array.from({ length: 20 }, (_, i) => ({
+      _id: String(i + 1),
+      endpoints: { rest: `https://m${i + 1}.local/api` },
+      status: 'offline',
+    }));
+    const originalFetch = global.fetch;
+    let active = 0;
+    let maxActive = 0;
+    (global as any).fetch = async () => {
+      active++;
+      maxActive = Math.max(maxActive, active);
+      await new Promise((r) => setTimeout(r, 10));
+      active--;
+      return { ok: true } as any;
+    };
+
+    await checkModules(undefined, undefined, 5);
+
+    assert.ok(maxActive <= 5);
+    global.fetch = originalFetch;
+  });
 });
