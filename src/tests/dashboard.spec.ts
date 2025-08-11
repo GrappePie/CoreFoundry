@@ -5,12 +5,15 @@ import { DASHBOARD_PATHS } from '../auth/roles';
 
 function makeRequest(path: string, role: string) {
   const url = new URL('https://example.com' + path);
-  const store: Record<string, string> = { 'x-user-role': role };
+  const store: Record<string, string> = { 'user-role': role };
   return {
     nextUrl: url,
     url: url.toString(),
-    headers: {
-      get: (key: string) => store[key.toLowerCase()] ?? null,
+    cookies: {
+      get: (key: string) => {
+        const value = store[key];
+        return value ? { value } : undefined;
+      },
     },
   } as any;
 }

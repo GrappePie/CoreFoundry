@@ -1,8 +1,8 @@
 # Dashboard
 
 La ruta `/dashboard` sirve como punto de entrada para todos los paneles.
-El middleware lee el encabezado `X-User-Role` y redirige automáticamente al
-panel correspondiente:
+El middleware obtiene el rol desde la sesión (por ejemplo, cookie `user-role`)
+y redirige automáticamente al panel correspondiente:
 
 - `owner` → `/dashboard/owner`
 - `admin` → `/dashboard/admin`
