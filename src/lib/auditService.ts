@@ -1,6 +1,6 @@
-import AuditLog from '@/models/AuditLog';
-import { subscribe, EXCHANGE_NAME } from '@/lib/rabbitmq';
-import { UserRegisteredSchema } from '@/schemas/events/UserRegistered.schema';
+import AuditLog from '../models/AuditLog';
+import { subscribe, EXCHANGE_NAME } from './rabbitmq';
+import { UserRegisteredSchema } from '../schemas/events/UserRegistered.schema';
 
 let auditInitialized = false;
 
