@@ -19,6 +19,20 @@ export interface RegisterModuleInput {
  * Returns the created module along with a generated integration token.
  */
 export async function registerModule(data: RegisterModuleInput) {
+  const existingModule = await Module.findOne({
+    name: data.name,
+    ownerId: data.ownerId,
+  });
+
+  if (existingModule) {
+    Object.assign(existingModule, data);
+    await existingModule.save();
+    return {
+      module: existingModule,
+      integrationToken: existingModule.integrationToken,
+    };
+  }
+
   const integrationToken = crypto.randomBytes(32).toString('hex');
   const savedModule = await Module.create({ ...data, integrationToken });
   return { module: savedModule, integrationToken };
