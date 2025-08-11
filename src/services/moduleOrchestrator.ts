@@ -4,6 +4,7 @@ import logger from '../lib/logger';
 
 let timer: NodeJS.Timeout | null = null;
 let isRunning = false;
+let isActive = false;
 
 export interface OrchestratorOptions {
   intervalMs?: number;
@@ -130,10 +131,11 @@ export async function checkModules(
  */
 export function startModuleOrchestrator(options: OrchestratorOptions = {}) {
   const { intervalMs = 60_000, pruneOfflineMs, maxConcurrentPings } = options;
-  if (timer) return;
+  if (isActive) return;
+  isActive = true;
 
   const run = async () => {
-    if (isRunning) return;
+    if (!isActive || isRunning) return;
     isRunning = true;
     try {
       await checkModules(pruneOfflineMs, undefined, maxConcurrentPings);
@@ -141,19 +143,21 @@ export function startModuleOrchestrator(options: OrchestratorOptions = {}) {
       logger.error('Module orchestration error', err);
     } finally {
       isRunning = false;
-      if (timer) {
+      if (isActive) {
+        if (timer) clearTimeout(timer);
         timer = setTimeout(run, intervalMs);
       }
     }
   };
+
   run();
-  timer = setTimeout(run, intervalMs);
 }
 
 /**
  * Stops the running module orchestrator.
  */
 export function stopModuleOrchestrator() {
+  isActive = false;
   if (timer) {
     clearTimeout(timer);
     timer = null;

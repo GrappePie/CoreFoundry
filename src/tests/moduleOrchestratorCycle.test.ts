@@ -55,4 +55,20 @@ describe('module orchestrator cycle control', () => {
 
     assert.ok(calls >= 2);
   });
+
+  it('stops scheduling when stopped mid-cycle', async () => {
+    let calls = 0;
+    (Module as any).find = async () => {
+      calls++;
+      await wait(50);
+      return [];
+    };
+
+    startModuleOrchestrator({ intervalMs: 10 });
+    await wait(5);
+    stopModuleOrchestrator();
+    await wait(100);
+
+    assert.equal(calls, 1);
+  });
 });
