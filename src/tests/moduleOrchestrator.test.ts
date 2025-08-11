@@ -112,6 +112,23 @@ describe('moduleOrchestrator service', () => {
     assert.deepEqual(emitted, [{ event: 'module.offline', moduleId: '4' }]);
   });
 
+  it('does not emit module.offline for invalid URL when already offline', async () => {
+    modules = [
+      {
+        _id: '5',
+        endpoints: { rest: 'invalid-url' },
+        status: 'offline',
+      },
+    ];
+    emitted.length = 0;
+
+    await checkModules(undefined, 50);
+    const m5 = modules.find((m) => m._id === '5');
+    assert(m5);
+    assert.equal(m5.status, 'offline');
+    assert.deepEqual(emitted, []);
+  });
+
   it('does not process modules with deletedAt', async () => {
     modules = [
       {

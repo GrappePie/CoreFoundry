@@ -31,11 +31,14 @@ export async function checkModules(
       pingUrl = new URL('/ping', mod.endpoints.rest).toString();
     } catch (err) {
       logger.error('Invalid ping URL for module', mod._id, err);
+      const wasOffline = mod.status === 'offline';
       await Module.findByIdAndUpdate(mod._id, { status: 'offline' });
-      try {
-        await eventBus.publish('module.offline', { moduleId: String(mod._id) });
-      } catch (err) {
-        logger.error('Failed to publish module.offline event', err);
+      if (!wasOffline) {
+        try {
+          await eventBus.publish('module.offline', { moduleId: String(mod._id) });
+        } catch (err) {
+          logger.error('Failed to publish module.offline event', err);
+        }
       }
       return null;
     }
