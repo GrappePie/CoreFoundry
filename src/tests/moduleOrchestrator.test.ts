@@ -2,6 +2,9 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { checkModules } from '../services/moduleOrchestrator';
 import Module from '../models/Module';
+import * as eventBus from '../messaging/eventBus';
+
+(eventBus as any).publish = async () => {};
 
 const modules: any[] = [
   {

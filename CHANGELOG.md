@@ -7,6 +7,7 @@ All notable changes to this project will be documented in this file.
 ### Added
 - AGENTS guideline to record significant changes in `CHANGELOG.md`.
 - Module orchestrator service to monitor registered modules and prune stale entries.
+- Module orchestrator now emits `module.online`, `module.offline`, and `module.removed` events with corresponding logs.
 
 ### Changed
 - Module orchestrator now pings modules in parallel before pruning.
