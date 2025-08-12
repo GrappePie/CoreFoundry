@@ -1,6 +1,8 @@
-import Module from '../models/Module';
+import Module, { IModule } from '../models/Module';
 import * as eventBus from '../messaging/eventBus';
 import logger from '../lib/logger';
+import type { FilterQuery } from 'mongoose';
+import { Types } from 'mongoose';
 
 let timer: NodeJS.Timeout | null = null;
 let isRunning = false;
@@ -26,14 +28,14 @@ export async function checkModules(
 ) {
   const now = Date.now();
 
-  async function pingModule(mod: any) {
+  async function pingModule(mod: IModule): Promise<{ mod: IModule; online: boolean } | null> {
     let pingUrl: string;
     try {
       pingUrl = new URL('/ping', mod.endpoints.rest).toString();
     } catch (err) {
       logger.error('Invalid ping URL for module', mod._id, err);
       const wasOffline = mod.status === 'offline';
-      const update: any = { status: 'offline' };
+      const update: Partial<IModule> = { status: 'offline' };
       if (!mod.lastHandshake) {
         update.lastHandshake = new Date();
       }
@@ -66,8 +68,8 @@ export async function checkModules(
     return { mod, online };
   }
 
-  async function processBatch(modules: any[]) {
-    const results: Array<{ mod: any; online: boolean } | null> = [];
+  async function processBatch(modules: IModule[]) {
+    const results: Array<{ mod: IModule; online: boolean } | null> = [];
     let index = 0;
     async function worker() {
       while (true) {
@@ -129,7 +131,7 @@ export async function checkModules(
           continue;
         }
         const wasOffline = mod.status === 'offline';
-        const update: any = { status: 'offline' };
+        const update: Partial<IModule> = { status: 'offline' };
         if (!mod.lastHandshake) {
           update.lastHandshake = new Date();
         }
@@ -153,18 +155,18 @@ export async function checkModules(
     }
   }
 
-  let lastId: any | null = null;
+  let lastId: Types.ObjectId | null = null;
   while (true) {
-    const query: any = { deletedAt: { $exists: false } };
+    const query: FilterQuery<IModule> = { deletedAt: { $exists: false } };
     if (lastId) {
-      query._id = { $gt: lastId };
+      query._id = { $gt: lastId } as any;
     }
-    const modules = await Module.find(query)
+    const modules: IModule[] = await Module.find(query)
       .sort({ _id: 1 })
       .limit(batchSize);
     if (modules.length === 0) break;
     await processBatch(modules);
-    lastId = modules[modules.length - 1]._id;
+    lastId = modules[modules.length - 1]._id as Types.ObjectId;
   }
 }
 
