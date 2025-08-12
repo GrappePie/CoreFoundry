@@ -7,6 +7,7 @@ import {
 } from '../moduleOrchestrator';
 import Module from '../../models/Module';
 import * as eventBus from '../../messaging/eventBus';
+import logger from '../../lib/logger';
 
 let originalFetch: typeof fetch;
 
@@ -85,6 +86,32 @@ describe('moduleOrchestrator service', () => {
 
     assert.deepEqual(deleted, ['1']);
     assert.deepEqual(updated, ['2']);
+  });
+
+  it('logs module id when ping fails', async () => {
+    const modules = [
+      { _id: '1', endpoints: { rest: 'http://m1' }, lastHandshake: new Date() },
+    ];
+    (Module as any).find = createFindStub(modules);
+    (Module as any).findByIdAndUpdate = async () => {};
+    const error = new Error('fail');
+    global.fetch = async () => {
+      throw error;
+    };
+    const logs: any[] = [];
+    const originalError = logger.error;
+    logger.error = (...args: unknown[]) => {
+      logs.push(args);
+    };
+
+    await checkModules();
+
+    logger.error = originalError;
+    assert.ok(
+      logs.some(
+        (args) => args[0] === 'Ping failed' && args[1] === '1' && args[2] === error
+      )
+    );
   });
 
   it('publishes module.online when an offline module responds', async () => {
