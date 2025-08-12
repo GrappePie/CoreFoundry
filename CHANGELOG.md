@@ -10,6 +10,7 @@ All notable changes to this project will be documented in this file.
 - Module orchestrator now emits `module.online`, `module.offline`, and `module.removed` events with corresponding logs.
 - Centralized logging utility.
 - Documentation for module orchestrator options and events.
+- Module orchestrator supports custom `pingPath` option.
 
 ### Changed
 - Module orchestrator now pings modules in parallel before pruning.
