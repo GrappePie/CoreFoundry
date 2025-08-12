@@ -8,6 +8,11 @@ Si un ping falla o el endpoint es inválido y el módulo no tiene `lastHandshake
 el orquestador lo marca como offline y registra la hora actual para permitir su
 eliminación en ciclos posteriores.
 
+## Autenticación
+
+Cada ping incluye un encabezado `Authorization` con el valor `Bearer <integrationToken>`.
+Los módulos deben validar este token antes de responder al ping.
+
 ## Opciones
 
 - `intervalMs` – tiempo en milisegundos entre cada ciclo de verificación (por defecto 60 000 ms).

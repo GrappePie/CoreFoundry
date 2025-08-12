@@ -17,6 +17,7 @@ All notable changes to this project will be documented in this file.
 - Module orchestrator pings now have a timeout using `AbortController` to mark modules offline on timeout.
 - Module orchestrator uses the logging utility instead of `console`.
 - Module orchestrator paginates using `_id` cursors instead of `skip` for improved efficiency.
+- Module orchestrator includes an `Authorization` header with the module's integration token on ping requests.
 
 ### Fixed
 - Module orchestrator marks modules offline and skips ping when their `rest` endpoint URL is invalid.

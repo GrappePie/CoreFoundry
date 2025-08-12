@@ -77,7 +77,12 @@ export async function checkModules(
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), pingTimeoutMs);
     try {
-      const res = await fetch(pingUrl, { signal: controller.signal });
+      const res = await fetch(pingUrl, {
+        signal: controller.signal,
+        headers: {
+          Authorization: `Bearer ${mod.integrationToken}`,
+        },
+      });
       online = res.ok;
     } catch (err) {
       if (err instanceof Error && err.name === 'AbortError') {
