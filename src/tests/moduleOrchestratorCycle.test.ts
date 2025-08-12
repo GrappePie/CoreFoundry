@@ -189,4 +189,63 @@ describe('module orchestrator cycle control', () => {
       global.fetch = originalFetch;
     }
   });
+
+  it('removes modules exceeding pruneOfflineMs and emits module.removed', async () => {
+    const originalFind = Module.find;
+    const originalDeleteOne = (Module as any).deleteOne;
+    const originalFetch = global.fetch;
+    try {
+      const modules = [
+        { _id: '1', endpoints: { rest: 'https://m1.local/api' }, lastHandshake: new Date(0) },
+      ];
+      (Module as any).find = createFindStub(modules);
+      const deleted: string[] = [];
+      (Module as any).deleteOne = async (query: any) => {
+        deleted.push(String(query._id));
+      };
+      (Module as any).findByIdAndUpdate = async () => {
+        throw new Error('should not update');
+      };
+      (global as any).fetch = async () => ({ ok: false } as any);
+
+      await checkModules(1, 50);
+
+      assert.deepEqual(deleted, ['1']);
+      assert.deepEqual(emitted, [{ event: 'module.removed', moduleId: '1' }]);
+    } finally {
+      (Module as any).find = originalFind;
+      (Module as any).deleteOne = originalDeleteOne;
+      global.fetch = originalFetch;
+    }
+  });
+
+  it('marks module offline and emits module.offline for invalid ping URL', async () => {
+    const originalFind = Module.find;
+    const originalFindByIdAndUpdate = (Module as any).findByIdAndUpdate;
+    try {
+      const modules = [
+        {
+          _id: '1',
+          endpoints: { rest: 'badurl' },
+          status: 'online',
+          lastHandshake: undefined,
+        },
+      ];
+      (Module as any).find = createFindStub(modules);
+      (Module as any).findByIdAndUpdate = async (id: any, update: any) => {
+        const mod = modules.find((m) => m._id === id);
+        Object.assign(mod!, update);
+        return mod;
+      };
+
+      await checkModules(undefined, 50);
+
+      assert.equal(modules[0].status, 'offline');
+      assert.ok((modules[0].lastHandshake as any) instanceof Date);
+      assert.deepEqual(emitted, [{ event: 'module.offline', moduleId: '1' }]);
+    } finally {
+      (Module as any).find = originalFind;
+      (Module as any).findByIdAndUpdate = originalFindByIdAndUpdate;
+    }
+  });
 });
