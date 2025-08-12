@@ -11,6 +11,7 @@ export interface OrchestratorOptions {
   pruneOfflineMs?: number;
   maxConcurrentPings?: number;
   pingTimeoutMs?: number;
+  batchSize?: number;
 }
 
 /**
@@ -20,10 +21,10 @@ export interface OrchestratorOptions {
 export async function checkModules(
   pruneOfflineMs?: number,
   pingTimeoutMs = 5_000,
-  maxConcurrentPings = 10
+  maxConcurrentPings = 10,
+  batchSize = 100
 ) {
   const now = Date.now();
-  const batchSize = 100;
 
   async function pingModule(mod: any) {
     let pingUrl: string;
@@ -176,6 +177,7 @@ export function startModuleOrchestrator(options: OrchestratorOptions = {}) {
     pruneOfflineMs,
     maxConcurrentPings,
     pingTimeoutMs,
+    batchSize = 100,
   } = options;
   if (isActive) return;
   isActive = true;
@@ -184,7 +186,7 @@ export function startModuleOrchestrator(options: OrchestratorOptions = {}) {
     if (!isActive || isRunning) return;
     isRunning = true;
     try {
-      await checkModules(pruneOfflineMs, pingTimeoutMs, maxConcurrentPings);
+      await checkModules(pruneOfflineMs, pingTimeoutMs, maxConcurrentPings, batchSize);
     } catch (err) {
       logger.error('Module orchestration error', err);
     } finally {

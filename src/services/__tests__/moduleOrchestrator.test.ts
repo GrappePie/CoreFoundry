@@ -313,4 +313,26 @@ describe('moduleOrchestrator service', () => {
     assert.ok(durations[0] >= 10);
     assert.ok(durations[0] < 50);
   });
+
+  it('passes batchSize from startModuleOrchestrator to checkModules', async () => {
+    const modules = Array.from({ length: 120 }, (_, i) => ({
+      _id: String(i),
+      endpoints: { rest: `http://m${i}` },
+      lastHandshake: new Date(),
+    }));
+    let findCalls = 0;
+    (Module as any).find = createFindStub(modules, {
+      onCall: () => {
+        findCalls++;
+      },
+    });
+    (Module as any).findByIdAndUpdate = async () => {};
+    global.fetch = async () => ({ ok: true }) as any;
+
+    startModuleOrchestrator({ intervalMs: 1_000, batchSize: 50 });
+    await new Promise((r) => setTimeout(r, 50));
+    stopModuleOrchestrator();
+
+    assert.equal(findCalls, 4);
+  });
 });
