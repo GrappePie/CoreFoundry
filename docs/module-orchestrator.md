@@ -4,6 +4,11 @@ El orquestador de módulos verifica periódicamente el estado de los módulos re
 Actualiza su estado, elimina los que permanecen inactivos demasiado tiempo y publica eventos
 para notificar cambios de disponibilidad.
 
+## Inicio y cierre
+
+El orquestador se inicia automáticamente cuando arranca el servidor y se detiene durante el
+apagado para liberar recursos. Esta lógica se encuentra en `instrumentation.ts`.
+
 Durante el registro, el campo `endpoints.rest` debe ser una URL válida; de lo contrario, el módulo será rechazado.
 
 Si un ping falla o el endpoint es inválido y el módulo no tiene `lastHandshake`,

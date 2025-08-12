@@ -12,6 +12,7 @@ All notable changes to this project will be documented in this file.
 - Documentation for module orchestrator options and events.
 - Module orchestrator supports custom `pingPath` option.
 - Validation to ensure `endpoints.rest` is a valid URL during module registration.
+- Instrumentation to start the module orchestrator on server boot and stop it on shutdown.
 
 ### Changed
 - Module orchestrator now pings modules in parallel before pruning.
