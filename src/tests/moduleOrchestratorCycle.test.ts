@@ -135,13 +135,20 @@ describe('module orchestrator cycle control', () => {
         Object.assign(mod!, update);
         return mod;
       };
-      (global as any).fetch = async () => ({ ok: true } as any);
+      const fetched: string[] = [];
+      (global as any).fetch = async (url: string) => {
+        fetched.push(String(url));
+        return { ok: true } as any;
+      };
 
       await checkModules(undefined, 50);
+      assert.equal(fetched[0], 'https://m1.local/api/ping');
       assert.deepEqual(emitted, [{ event: 'module.online', moduleId: '1' }]);
 
       emitted.length = 0;
+      fetched.length = 0;
       await checkModules(undefined, 50);
+      assert.equal(fetched[0], 'https://m1.local/api/ping');
       assert.deepEqual(emitted, []);
     } finally {
       (Module as any).find = originalFind;
