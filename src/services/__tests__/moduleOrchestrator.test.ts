@@ -343,6 +343,18 @@ describe('moduleOrchestrator service', () => {
     });
   });
 
+  it('throws if pruneOfflineMs is not positive in checkModules', async () => {
+    await assert.rejects(() => checkModules(0), {
+      message: 'pruneOfflineMs must be a positive number',
+    });
+  });
+
+  it('throws if pingTimeoutMs is not positive in checkModules', async () => {
+    await assert.rejects(() => checkModules(undefined, 0), {
+      message: 'pingTimeoutMs must be a positive number',
+    });
+  });
+
   it('throws if batchSize is not positive in checkModules', async () => {
     await assert.rejects(() => checkModules(undefined, undefined, undefined, 0), {
       message: 'batchSize must be a positive number',
@@ -359,6 +371,20 @@ describe('moduleOrchestrator service', () => {
     assert.throws(
       () => startModuleOrchestrator({ intervalMs: 1_000, maxConcurrentPings: 0 }),
       { message: 'maxConcurrentPings must be a positive number' }
+    );
+  });
+
+  it('throws if pruneOfflineMs is not positive in startModuleOrchestrator', () => {
+    assert.throws(
+      () => startModuleOrchestrator({ intervalMs: 1_000, pruneOfflineMs: 0 }),
+      { message: 'pruneOfflineMs must be a positive number' }
+    );
+  });
+
+  it('throws if pingTimeoutMs is not positive in startModuleOrchestrator', () => {
+    assert.throws(
+      () => startModuleOrchestrator({ intervalMs: 1_000, pingTimeoutMs: 0 }),
+      { message: 'pingTimeoutMs must be a positive number' }
     );
   });
 
