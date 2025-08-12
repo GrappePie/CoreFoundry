@@ -26,6 +26,15 @@ export async function checkModules(
   maxConcurrentPings = 10,
   batchSize = 100
 ) {
+  if (
+    pruneOfflineMs !== undefined &&
+    (typeof pruneOfflineMs !== 'number' || pruneOfflineMs <= 0)
+  ) {
+    throw new Error('pruneOfflineMs must be a positive number');
+  }
+  if (typeof pingTimeoutMs !== 'number' || pingTimeoutMs <= 0) {
+    throw new Error('pingTimeoutMs must be a positive number');
+  }
   if (typeof maxConcurrentPings !== 'number' || maxConcurrentPings <= 0) {
     throw new Error('maxConcurrentPings must be a positive number');
   }
@@ -193,6 +202,18 @@ export function startModuleOrchestrator(options: OrchestratorOptions = {}) {
   } = options;
   if (typeof intervalMs !== 'number' || intervalMs <= 0) {
     throw new Error('intervalMs must be a positive number');
+  }
+  if (
+    pruneOfflineMs !== undefined &&
+    (typeof pruneOfflineMs !== 'number' || pruneOfflineMs <= 0)
+  ) {
+    throw new Error('pruneOfflineMs must be a positive number');
+  }
+  if (
+    pingTimeoutMs !== undefined &&
+    (typeof pingTimeoutMs !== 'number' || pingTimeoutMs <= 0)
+  ) {
+    throw new Error('pingTimeoutMs must be a positive number');
   }
   if (
     maxConcurrentPings !== undefined &&

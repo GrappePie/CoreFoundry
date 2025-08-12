@@ -11,9 +11,9 @@ eliminación en ciclos posteriores.
 ## Opciones
 
 - `intervalMs` – tiempo en milisegundos entre cada ciclo de verificación (por defecto 60 000 ms).
-- `pruneOfflineMs` – elimina un módulo si supera este umbral de tiempo inactivo.
+- `pruneOfflineMs` – elimina un módulo si supera este umbral de tiempo inactivo. Debe ser un número positivo.
 - `maxConcurrentPings` – cantidad máxima de pings que se ejecutan en paralelo (por defecto 10).
-- `pingTimeoutMs` – tiempo máximo de espera de cada ping antes de marcar al módulo como offline (por defecto 5 000 ms).
+- `pingTimeoutMs` – tiempo máximo de espera de cada ping antes de marcar al módulo como offline. Debe ser un número positivo (por defecto 5 000 ms).
 - `batchSize` – tamaño de lote al paginar módulos (por defecto 100).
 
 ## Eventos emitidos
