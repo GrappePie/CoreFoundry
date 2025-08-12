@@ -32,7 +32,11 @@ export async function checkModules(
     } catch (err) {
       logger.error('Invalid ping URL for module', mod._id, err);
       const wasOffline = mod.status === 'offline';
-      await Module.findByIdAndUpdate(mod._id, { status: 'offline' });
+      const update: any = { status: 'offline' };
+      if (!mod.lastHandshake) {
+        update.lastHandshake = new Date();
+      }
+      await Module.findByIdAndUpdate(mod._id, update);
       if (!wasOffline) {
         try {
           await eventBus.publish('module.offline', { moduleId: String(mod._id) });
@@ -124,8 +128,12 @@ export async function checkModules(
           continue;
         }
         const wasOffline = mod.status === 'offline';
+        const update: any = { status: 'offline' };
+        if (!mod.lastHandshake) {
+          update.lastHandshake = new Date();
+        }
         try {
-          await Module.findByIdAndUpdate(mod._id, { status: 'offline' });
+          await Module.findByIdAndUpdate(mod._id, update);
         } catch (err) {
           logger.error('Failed to update module to offline', mod._id, err);
           continue;

@@ -4,6 +4,10 @@ El orquestador de módulos verifica periódicamente el estado de los módulos re
 Actualiza su estado, elimina los que permanecen inactivos demasiado tiempo y publica eventos
 para notificar cambios de disponibilidad.
 
+Si un ping falla o el endpoint es inválido y el módulo no tiene `lastHandshake`,
+el orquestador lo marca como offline y registra la hora actual para permitir su
+eliminación en ciclos posteriores.
+
 ## Opciones
 
 - `intervalMs` – tiempo en milisegundos entre cada ciclo de verificación (por defecto 60 000 ms).
