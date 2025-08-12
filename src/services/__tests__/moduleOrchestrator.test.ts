@@ -291,6 +291,23 @@ describe('moduleOrchestrator service', () => {
     assert.ok(durations[0] < 50);
   });
 
+  it('uses custom pingPath when provided', async () => {
+    const modules = [
+      { _id: '1', endpoints: { rest: 'http://m1' }, lastHandshake: new Date() },
+    ];
+    (Module as any).find = createFindStub(modules);
+    (Module as any).findByIdAndUpdate = async () => {};
+    let url: string | undefined;
+    global.fetch = async (u: string) => {
+      url = u;
+      return { ok: true } as any;
+    };
+
+    await checkModules(undefined, undefined, undefined, undefined, 'status');
+
+    assert.equal(url, 'http://m1/status');
+  });
+
   it('passes pingTimeoutMs from startModuleOrchestrator to checkModules', async () => {
     const modules = [
       { _id: '1', endpoints: { rest: 'http://m1' }, lastHandshake: new Date() },
@@ -313,6 +330,25 @@ describe('moduleOrchestrator service', () => {
 
     assert.ok(durations[0] >= 10);
     assert.ok(durations[0] < 50);
+  });
+
+  it('passes pingPath from startModuleOrchestrator to checkModules', async () => {
+    const modules = [
+      { _id: '1', endpoints: { rest: 'http://m1' }, lastHandshake: new Date() },
+    ];
+    (Module as any).find = createFindStub(modules);
+    (Module as any).findByIdAndUpdate = async () => {};
+    let url: string | undefined;
+    global.fetch = async (u: string) => {
+      url = u;
+      return { ok: true } as any;
+    };
+
+    startModuleOrchestrator({ intervalMs: 1_000, pingPath: 'health' });
+    await new Promise((r) => setTimeout(r, 50));
+    stopModuleOrchestrator();
+
+    assert.equal(url, 'http://m1/health');
   });
 
   it('passes batchSize from startModuleOrchestrator to checkModules', async () => {
@@ -361,6 +397,13 @@ describe('moduleOrchestrator service', () => {
     });
   });
 
+  it('throws if pingPath is empty in checkModules', async () => {
+    await assert.rejects(
+      () => checkModules(undefined, undefined, undefined, undefined, ''),
+      { message: 'pingPath must be a non-empty string' }
+    );
+  });
+
   it('throws if intervalMs is not positive in startModuleOrchestrator', () => {
     assert.throws(() => startModuleOrchestrator({ intervalMs: 0 }), {
       message: 'intervalMs must be a positive number',
@@ -392,6 +435,13 @@ describe('moduleOrchestrator service', () => {
     assert.throws(
       () => startModuleOrchestrator({ intervalMs: 1_000, batchSize: 0 }),
       { message: 'batchSize must be a positive number' }
+    );
+  });
+
+  it('throws if pingPath is empty in startModuleOrchestrator', () => {
+    assert.throws(
+      () => startModuleOrchestrator({ intervalMs: 1_000, pingPath: '' }),
+      { message: 'pingPath must be a non-empty string' }
     );
   });
 });

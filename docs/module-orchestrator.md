@@ -15,6 +15,7 @@ eliminación en ciclos posteriores.
 - `maxConcurrentPings` – cantidad máxima de pings que se ejecutan en paralelo (por defecto 10).
 - `pingTimeoutMs` – tiempo máximo de espera de cada ping antes de marcar al módulo como offline. Debe ser un número positivo (por defecto 5 000 ms).
 - `batchSize` – tamaño de lote al paginar módulos (por defecto 100).
+- `pingPath` – ruta a anexar al endpoint `rest` del módulo para realizar el ping (por defecto `ping`).
 
 ## Eventos emitidos
 

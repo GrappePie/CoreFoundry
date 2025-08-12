@@ -14,6 +14,7 @@ export interface OrchestratorOptions {
   maxConcurrentPings?: number;
   pingTimeoutMs?: number;
   batchSize?: number;
+  pingPath?: string;
 }
 
 /**
@@ -24,7 +25,8 @@ export async function checkModules(
   pruneOfflineMs?: number,
   pingTimeoutMs = 5_000,
   maxConcurrentPings = 10,
-  batchSize = 100
+  batchSize = 100,
+  pingPath = 'ping'
 ) {
   if (
     pruneOfflineMs !== undefined &&
@@ -41,6 +43,9 @@ export async function checkModules(
   if (typeof batchSize !== 'number' || batchSize <= 0) {
     throw new Error('batchSize must be a positive number');
   }
+  if (typeof pingPath !== 'string' || pingPath.length === 0) {
+    throw new Error('pingPath must be a non-empty string');
+  }
 
   const now = Date.now();
 
@@ -50,7 +55,7 @@ export async function checkModules(
       const baseUrl = mod.endpoints.rest.endsWith('/')
         ? mod.endpoints.rest
         : `${mod.endpoints.rest}/`;
-      pingUrl = new URL('ping', baseUrl).toString();
+      pingUrl = new URL(pingPath, baseUrl).toString();
     } catch (err) {
       logger.error('Invalid ping URL for module', mod._id, err);
       const wasOffline = mod.status === 'offline';
@@ -199,6 +204,7 @@ export function startModuleOrchestrator(options: OrchestratorOptions = {}) {
     maxConcurrentPings,
     pingTimeoutMs,
     batchSize = 100,
+    pingPath,
   } = options;
   if (typeof intervalMs !== 'number' || intervalMs <= 0) {
     throw new Error('intervalMs must be a positive number');
@@ -224,6 +230,9 @@ export function startModuleOrchestrator(options: OrchestratorOptions = {}) {
   if (typeof batchSize !== 'number' || batchSize <= 0) {
     throw new Error('batchSize must be a positive number');
   }
+  if (pingPath !== undefined && (typeof pingPath !== 'string' || pingPath.length === 0)) {
+    throw new Error('pingPath must be a non-empty string');
+  }
   if (isActive) return;
   isActive = true;
 
@@ -231,7 +240,13 @@ export function startModuleOrchestrator(options: OrchestratorOptions = {}) {
     if (!isActive || isRunning) return;
     isRunning = true;
     try {
-      await checkModules(pruneOfflineMs, pingTimeoutMs, maxConcurrentPings, batchSize);
+      await checkModules(
+        pruneOfflineMs,
+        pingTimeoutMs,
+        maxConcurrentPings,
+        batchSize,
+        pingPath
+      );
     } catch (err) {
       logger.error('Module orchestration error', err);
     } finally {
