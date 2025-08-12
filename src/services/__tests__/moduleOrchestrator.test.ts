@@ -115,6 +115,30 @@ describe('moduleOrchestrator service', () => {
     );
   });
 
+  it('sends Authorization header with integrationToken when pinging', async () => {
+    const token = 'tok123';
+    const modules = [
+      {
+        _id: '1',
+        endpoints: { rest: 'http://m1' },
+        lastHandshake: new Date(),
+        status: 'offline',
+        integrationToken: token,
+      },
+    ];
+    (Module as any).find = createFindStub(modules);
+    (Module as any).findByIdAndUpdate = async () => {};
+    let headers: any;
+    global.fetch = async (_url: string, opts: any) => {
+      headers = opts?.headers;
+      return { ok: true } as any;
+    };
+
+    await checkModules();
+
+    assert.equal(headers?.Authorization, `Bearer ${token}`);
+  });
+
   it('publishes module.online when an offline module responds', async () => {
     const modules = [
       {
