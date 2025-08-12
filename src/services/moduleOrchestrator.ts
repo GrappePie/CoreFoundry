@@ -26,6 +26,13 @@ export async function checkModules(
   maxConcurrentPings = 10,
   batchSize = 100
 ) {
+  if (typeof maxConcurrentPings !== 'number' || maxConcurrentPings <= 0) {
+    throw new Error('maxConcurrentPings must be a positive number');
+  }
+  if (typeof batchSize !== 'number' || batchSize <= 0) {
+    throw new Error('batchSize must be a positive number');
+  }
+
   const now = Date.now();
 
   async function pingModule(mod: IModule): Promise<{ mod: IModule; online: boolean } | null> {
@@ -181,6 +188,18 @@ export function startModuleOrchestrator(options: OrchestratorOptions = {}) {
     pingTimeoutMs,
     batchSize = 100,
   } = options;
+  if (typeof intervalMs !== 'number' || intervalMs <= 0) {
+    throw new Error('intervalMs must be a positive number');
+  }
+  if (
+    maxConcurrentPings !== undefined &&
+    (typeof maxConcurrentPings !== 'number' || maxConcurrentPings <= 0)
+  ) {
+    throw new Error('maxConcurrentPings must be a positive number');
+  }
+  if (typeof batchSize !== 'number' || batchSize <= 0) {
+    throw new Error('batchSize must be a positive number');
+  }
   if (isActive) return;
   isActive = true;
 

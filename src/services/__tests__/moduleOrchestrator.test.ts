@@ -43,6 +43,7 @@ beforeEach(() => {
 
 afterEach(() => {
   global.fetch = originalFetch;
+  stopModuleOrchestrator();
 });
 
 describe('moduleOrchestrator service', () => {
@@ -334,5 +335,37 @@ describe('moduleOrchestrator service', () => {
     stopModuleOrchestrator();
 
     assert.equal(findCalls, 4);
+  });
+
+  it('throws if maxConcurrentPings is not positive in checkModules', async () => {
+    await assert.rejects(() => checkModules(undefined, undefined, 0), {
+      message: 'maxConcurrentPings must be a positive number',
+    });
+  });
+
+  it('throws if batchSize is not positive in checkModules', async () => {
+    await assert.rejects(() => checkModules(undefined, undefined, undefined, 0), {
+      message: 'batchSize must be a positive number',
+    });
+  });
+
+  it('throws if intervalMs is not positive in startModuleOrchestrator', () => {
+    assert.throws(() => startModuleOrchestrator({ intervalMs: 0 }), {
+      message: 'intervalMs must be a positive number',
+    });
+  });
+
+  it('throws if maxConcurrentPings is not positive in startModuleOrchestrator', () => {
+    assert.throws(
+      () => startModuleOrchestrator({ intervalMs: 1_000, maxConcurrentPings: 0 }),
+      { message: 'maxConcurrentPings must be a positive number' }
+    );
+  });
+
+  it('throws if batchSize is not positive in startModuleOrchestrator', () => {
+    assert.throws(
+      () => startModuleOrchestrator({ intervalMs: 1_000, batchSize: 0 }),
+      { message: 'batchSize must be a positive number' }
+    );
   });
 });
