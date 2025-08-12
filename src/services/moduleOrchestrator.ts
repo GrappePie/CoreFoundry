@@ -38,7 +38,10 @@ export async function checkModules(
   async function pingModule(mod: IModule): Promise<{ mod: IModule; online: boolean } | null> {
     let pingUrl: string;
     try {
-      pingUrl = new URL('/ping', mod.endpoints.rest).toString();
+      const baseUrl = mod.endpoints.rest.endsWith('/')
+        ? mod.endpoints.rest
+        : `${mod.endpoints.rest}/`;
+      pingUrl = new URL('ping', baseUrl).toString();
     } catch (err) {
       logger.error('Invalid ping URL for module', mod._id, err);
       const wasOffline = mod.status === 'offline';
