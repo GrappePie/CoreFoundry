@@ -60,4 +60,18 @@ describe('moduleDiscovery service', () => {
     assert.deepEqual(second.module.manifest, { b: 2 });
     assert.equal(second.module.version, '1.0.1');
   });
+
+  it('rejects invalid rest endpoint URL', async () => {
+    await assert.rejects(
+      () =>
+        registerModule({
+          name: 'inventory',
+          version: '1.0.0',
+          ownerId: 'u1',
+          manifest: {},
+          endpoints: { rest: 'not-a-url' },
+        }),
+      /endpoints\.rest must be a valid URL/
+    );
+  });
 });

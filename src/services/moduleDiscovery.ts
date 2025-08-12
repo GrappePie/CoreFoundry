@@ -19,6 +19,12 @@ export interface RegisterModuleInput {
  * Returns the created module along with a generated integration token.
  */
 export async function registerModule(data: RegisterModuleInput) {
+  try {
+    new URL(data.endpoints.rest);
+  } catch {
+    throw new Error('endpoints.rest must be a valid URL');
+  }
+
   const existingModule = await Module.findOne({
     name: data.name,
     ownerId: data.ownerId,
