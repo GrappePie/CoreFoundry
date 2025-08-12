@@ -397,6 +397,61 @@ describe('moduleOrchestrator service', () => {
     assert.equal(findCalls, 4);
   });
 
+  it('passes pruneOfflineMs from startModuleOrchestrator to checkModules', async () => {
+    const modules = [
+      {
+        _id: '1',
+        endpoints: { rest: 'http://m1' },
+        lastHandshake: new Date(0),
+      },
+    ];
+    (Module as any).find = createFindStub(modules);
+    (Module as any).findByIdAndUpdate = async () => {
+      throw new Error('should not update');
+    };
+    const deleted: string[] = [];
+    (Module as any).deleteOne = async (query: any) => {
+      deleted.push(String(query._id));
+    };
+    global.fetch = async () => ({ ok: false }) as any;
+    const events: Array<{ event: string; payload: any }> = [];
+    (eventBus as any).publish = async (event: string, payload: any) => {
+      events.push({ event, payload });
+    };
+
+    startModuleOrchestrator({ intervalMs: 1_000, pruneOfflineMs: 1 });
+    await new Promise((r) => setTimeout(r, 50));
+    stopModuleOrchestrator();
+
+    assert.deepEqual(deleted, ['1']);
+    assert.deepEqual(events, [{ event: 'module.removed', payload: { moduleId: '1' } }]);
+  });
+
+  it('passes maxConcurrentPings from startModuleOrchestrator to checkModules', async () => {
+    const modules = Array.from({ length: 20 }, (_, i) => ({
+      _id: String(i),
+      endpoints: { rest: `http://m${i}` },
+      lastHandshake: new Date(),
+    }));
+    (Module as any).find = createFindStub(modules);
+    (Module as any).findByIdAndUpdate = async () => {};
+    let active = 0;
+    let maxActive = 0;
+    global.fetch = async () => {
+      active++;
+      maxActive = Math.max(maxActive, active);
+      await new Promise((r) => setTimeout(r, 5));
+      active--;
+      return { ok: true } as any;
+    };
+
+    startModuleOrchestrator({ intervalMs: 1_000, maxConcurrentPings: 5 });
+    await new Promise((r) => setTimeout(r, 200));
+    stopModuleOrchestrator();
+
+    assert.ok(maxActive <= 5);
+  });
+
   it('throws if maxConcurrentPings is not positive in checkModules', async () => {
     await assert.rejects(() => checkModules(undefined, undefined, 0), {
       message: 'maxConcurrentPings must be a positive number',
