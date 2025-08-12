@@ -100,6 +100,15 @@ flowchart LR
 
 ---
 
+## 🔄 Orquestador de Módulos
+
+El orquestador verifica periódicamente los módulos registrados, actualiza su estado y
+puede eliminar los que permanezcan offline demasiado tiempo. Consulta
+[docs/module-orchestrator.md](./docs/module-orchestrator.md) para conocer las opciones de
+configuración y los eventos emitidos.
+
+---
+
 ## 🧾 Contrato y Versionado de Módulos
 
 Cada módulo debe proporcionar un **manifest** JSON con metadatos clave (nombre, versión, endpoints, esquemas y eventos). El Módulo Central valida este manifest con AJV y lo almacena en un **Schema Registry** para facilitar la compatibilidad entre versiones.
