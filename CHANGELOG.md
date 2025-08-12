@@ -22,6 +22,7 @@ All notable changes to this project will be documented in this file.
 - Module orchestrator publishes `module.offline` when ping URL is invalid.
 - Module orchestrator runs sequentially, avoiding overlapping cycles and resetting its state on errors.
 - Module orchestrator sorts modules by `_id` before pagination to ensure stable ordering.
+- Module orchestrator sets `lastHandshake` when pings fail or URLs are invalid, enabling pruning of modules without previous handshakes.
 
 ## [0.5.2] - 2025-08-11
 

@@ -168,6 +168,35 @@ describe('moduleOrchestrator service', () => {
     assert.deepEqual(events, [{ event: 'module.removed', payload: { moduleId: '1' } }]);
   });
 
+  it('prunes modules without lastHandshake on the next cycle', async () => {
+    const modules = [
+      {
+        _id: '1',
+        endpoints: { rest: 'http://m1' },
+        status: 'online',
+      },
+    ];
+    (Module as any).find = createFindStub(modules);
+    (Module as any).findByIdAndUpdate = async (id: string, update: any) => {
+      const mod = modules.find((m) => String(m._id) === String(id));
+      if (mod) Object.assign(mod, update);
+    };
+    const deleted: string[] = [];
+    (Module as any).deleteOne = async (query: any) => {
+      deleted.push(String(query._id));
+    };
+    global.fetch = async () => ({ ok: false }) as any;
+
+    await checkModules(1);
+    assert.ok(modules[0].lastHandshake instanceof Date);
+    assert.deepEqual(deleted, []);
+
+    await new Promise((r) => setTimeout(r, 2));
+    await checkModules(1);
+
+    assert.deepEqual(deleted, ['1']);
+  });
+
   it('respects maxConcurrentPings limit', async () => {
     const modules = Array.from({ length: 20 }, (_, i) => ({
       _id: String(i),
