@@ -14,6 +14,7 @@ All notable changes to this project will be documented in this file.
 - Validation to ensure `endpoints.rest` is a valid URL during module registration.
 - Instrumentation to start the module orchestrator on server boot and stop it on shutdown.
 - Module orchestrator publishes `orchestrator.cycle` metrics with online/offline counts and cycle duration.
+- Dashboard views for `owner`, `admin` y `employee` que consumen `getModules` y se actualizan en tiempo real mediante eventos de módulo.
 
 ### Changed
 - Module orchestrator now pings modules in parallel before pruning.
