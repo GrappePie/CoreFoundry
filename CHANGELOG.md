@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+_No changes yet._
+
+## [0.5.3] - 2025-08-15
+
 ### Added
 - AGENTS guideline to record significant changes in `CHANGELOG.md`.
 - Module orchestrator service to monitor registered modules and prune stale entries.

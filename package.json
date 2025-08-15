@@ -1,13 +1,13 @@
 {
   "name": "corefoundry",
-  "version": "0.1.0",
+  "version": "0.5.3",
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "test": "rm -rf .tmp-tests && tsc src/**/*.ts --outDir .tmp-tests --module commonjs --target ES2019 --esModuleInterop --skipLibCheck --strictNullChecks && node --test $(find .tmp-tests -name '*.test.js' -o -name '*.spec.js') && rm -rf .tmp-tests"
+    "test": "rimraf .tmp-tests && tsc -p tsconfig.tests.json && node --test \".tmp-tests/**/*.test.js\" \".tmp-tests/**/*.spec.js\" && rimraf .tmp-tests"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.84.1",
@@ -28,6 +28,7 @@
     "zustand": "^5.0.7"
   },
   "devDependencies": {
+    "@core/module-cli": "file:packages/module-cli",
     "@eslint/eslintrc": "^3",
     "@tailwindcss/postcss": "^4",
     "@types/amqplib": "^0.10.7",
@@ -36,10 +37,11 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "cross-env": "^10.0.0",
     "eslint": "^9",
     "eslint-config-next": "15.4.5",
+    "rimraf": "^6.0.1",
     "tailwindcss": "^4",
-    "typescript": "^5",
-    "@core/module-cli": "file:packages/module-cli"
+    "typescript": "^5"
   }
 }
