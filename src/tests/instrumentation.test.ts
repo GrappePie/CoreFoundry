@@ -4,41 +4,32 @@ import * as orchestrator from '../services/moduleOrchestrator';
 import { register } from '../../instrumentation';
 
 const origStart = orchestrator.startModuleOrchestrator;
-const origStop = orchestrator.stopModuleOrchestrator;
 
 let started: boolean;
-let stopped: boolean;
 
 describe('instrumentation', () => {
   beforeEach(() => {
     started = false;
-    stopped = false;
     (orchestrator as any).startModuleOrchestrator = () => {
       started = true;
     };
-    (orchestrator as any).stopModuleOrchestrator = () => {
-      stopped = true;
-    };
-    process.removeAllListeners('SIGINT');
-    process.removeAllListeners('SIGTERM');
-    process.removeAllListeners('exit');
+    delete process.env.NEXT_RUNTIME;
   });
 
   afterEach(() => {
     (orchestrator as any).startModuleOrchestrator = origStart;
-    (orchestrator as any).stopModuleOrchestrator = origStop;
-    process.removeAllListeners('SIGINT');
-    process.removeAllListeners('SIGTERM');
-    process.removeAllListeners('exit');
     delete process.env.NEXT_RUNTIME;
   });
 
-  it('starts orchestrator and registers shutdown hooks', () => {
+  it('starts orchestrator when running in node runtime', () => {
     process.env.NEXT_RUNTIME = 'nodejs';
     register();
     assert.ok(started);
-    process.emit('SIGTERM');
-    assert.ok(stopped);
+  });
+
+  it('does not start orchestrator in edge runtime', () => {
+    process.env.NEXT_RUNTIME = 'edge';
+    register();
+    assert.equal(started, false);
   });
 });
-

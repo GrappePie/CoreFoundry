@@ -6,11 +6,5 @@ export function register() {
     ? Number(process.env.MODULE_ORCHESTRATOR_INTERVAL_MS)
     : undefined;
   orchestrator.startModuleOrchestrator(interval ? { intervalMs: interval } : undefined);
-  const shutdown = () => {
-    orchestrator.stopModuleOrchestrator();
-  };
-  process.once('SIGINT', shutdown);
-  process.once('SIGTERM', shutdown);
-  process.once('exit', shutdown);
+  // Nota: no se registran señales de proceso para compatibilidad edge/serverless
 }
-

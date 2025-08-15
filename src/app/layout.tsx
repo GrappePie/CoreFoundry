@@ -56,9 +56,13 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  connectRabbit()
-    .then(() => initAuditService())
-    .catch(err => console.error('Error inicializando RabbitMQ/auditService:', err));
+  // Solo inicializar MQ/auditoría si no está deshabilitado por variable de entorno
+  const mqDisabled = String(process.env.RABBITMQ_DISABLED || '').toLowerCase() === 'true';
+  if (!mqDisabled) {
+    connectRabbit()
+      .then(() => initAuditService())
+      .catch(err => console.error('Error inicializando RabbitMQ/auditService:', err));
+  }
   return (
     <html lang="es" className="scroll-smooth">
       <body className={inter.className}>

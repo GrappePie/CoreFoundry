@@ -1,11 +1,5 @@
 import mongoose, { Mongoose } from "mongoose";
 
-const MONGODB_URI = process.env.MONGODB_URI as string;
-
-if (!MONGODB_URI) {
-  throw new Error("Please define the MONGODB_URI environment variable inside .env.local");
-}
-
 declare global {
     var mongoose: {
         conn: Mongoose | null;
@@ -20,26 +14,36 @@ if (!cached) {
 }
 
 async function dbConnect() {
-  if (cached.conn) {
-    return cached.conn;
+  const uri = process.env.MONGODB_URI as string | undefined;
+
+  // En tests, no forzamos conexión real para permitir el stubbing de Mongoose
+  if (!uri) {
+    if (process.env.NODE_ENV === 'test') {
+      return (mongoose as unknown) as Mongoose;
+    }
+    throw new Error("Please define the MONGODB_URI environment variable inside .env.local");
   }
 
-  if (!cached.promise) {
+  if (cached!.conn) {
+    return cached!.conn;
+  }
+
+  if (!cached!.promise) {
     const opts = {
       bufferCommands: false,
     };
 
-    cached.promise = mongoose.connect(MONGODB_URI, opts).then((mongoose) => {
+    cached!.promise = mongoose.connect(uri, opts).then((mongoose) => {
       return mongoose;
     });
   }
   try {
-    cached.conn = await cached.promise;
+    cached!.conn = await cached!.promise;
   } catch (e) {
-    cached.promise = null;
+    cached!.promise = null;
     throw e;
   }
-  return cached.conn;
+  return cached!.conn as Mongoose;
 }
 
 export default dbConnect;

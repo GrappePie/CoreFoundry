@@ -4,6 +4,7 @@ import {
   checkModules,
   startModuleOrchestrator,
   stopModuleOrchestrator,
+  getOrchestratorMetrics,
 } from '../moduleOrchestrator';
 import Module from '../../models/Module';
 import * as eventBus from '../../messaging/eventBus';
@@ -42,7 +43,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
-  global.fetch = originalFetch;
+  (global as any).fetch = originalFetch as any;
   stopModuleOrchestrator();
 });
 
@@ -58,7 +59,7 @@ describe('moduleOrchestrator service', () => {
       updated.push(String(id));
       if (String(id) === '1') throw new Error('fail');
     };
-    global.fetch = async () => ({ ok: true }) as any;
+    (global as any).fetch = async () => ({ ok: true }) as any;
 
     await checkModules();
 
@@ -80,7 +81,7 @@ describe('moduleOrchestrator service', () => {
       deleted.push(String(query._id));
       throw new Error('delete fail');
     };
-    global.fetch = async (url: string) =>
+    (global as any).fetch = async (url: string) =>
       ({ ok: !url.includes('m1') }) as any;
 
     await checkModules(1);
@@ -96,7 +97,7 @@ describe('moduleOrchestrator service', () => {
     (Module as any).find = createFindStub(modules);
     (Module as any).findByIdAndUpdate = async () => {};
     const error = new Error('fail');
-    global.fetch = async () => {
+    (global as any).fetch = async () => {
       throw error;
     };
     const logs: any[] = [];
@@ -129,7 +130,7 @@ describe('moduleOrchestrator service', () => {
     (Module as any).find = createFindStub(modules);
     (Module as any).findByIdAndUpdate = async () => {};
     let headers: any;
-    global.fetch = async (_url: string, opts: any) => {
+    (global as any).fetch = async (_url: string, opts: any) => {
       headers = opts?.headers;
       return { ok: true } as any;
     };
@@ -153,7 +154,7 @@ describe('moduleOrchestrator service', () => {
     (Module as any).findByIdAndUpdate = async (id: string, update: any) => {
       updated.push({ id: String(id), status: update.status });
     };
-    global.fetch = async () => ({ ok: true }) as any;
+    (global as any).fetch = async () => ({ ok: true }) as any;
     const events: Array<{ event: string; payload: any }> = [];
     (eventBus as any).publish = async (event: string, payload: any) => {
       events.push({ event, payload });
@@ -181,7 +182,7 @@ describe('moduleOrchestrator service', () => {
     (Module as any).deleteOne = async (query: any) => {
       deleted.push(String(query._id));
     };
-    global.fetch = async () => ({ ok: false }) as any;
+    (global as any).fetch = async () => ({ ok: false }) as any;
     const events: Array<{ event: string; payload: any }> = [];
     (eventBus as any).publish = async (event: string, payload: any) => {
       events.push({ event, payload });
@@ -200,7 +201,7 @@ describe('moduleOrchestrator service', () => {
     ];
     (Module as any).find = createFindStub(modules);
     (Module as any).findByIdAndUpdate = async () => {};
-    global.fetch = async (url: string) => ({ ok: !url.includes('m2') }) as any;
+    (global as any).fetch = async (url: string) => ({ ok: !url.includes('m2') }) as any;
     const events: Array<{ event: string; payload: any }> = [];
     (eventBus as any).publish = async (event: string, payload: any) => {
       events.push({ event, payload });
@@ -221,6 +222,7 @@ describe('moduleOrchestrator service', () => {
         _id: '1',
         endpoints: { rest: 'http://m1' },
         status: 'online',
+        lastHandshake: undefined as any,
       },
     ];
     (Module as any).find = createFindStub(modules);
@@ -232,7 +234,7 @@ describe('moduleOrchestrator service', () => {
     (Module as any).deleteOne = async (query: any) => {
       deleted.push(String(query._id));
     };
-    global.fetch = async () => ({ ok: false }) as any;
+    (global as any).fetch = async () => ({ ok: false }) as any;
 
     await checkModules(1);
     assert.ok(modules[0].lastHandshake instanceof Date);
@@ -254,7 +256,7 @@ describe('moduleOrchestrator service', () => {
     (Module as any).findByIdAndUpdate = async () => {};
     let active = 0;
     let maxActive = 0;
-    global.fetch = async () => {
+    (global as any).fetch = async () => {
       active++;
       maxActive = Math.max(maxActive, active);
       await new Promise((r) => setTimeout(r, 5));
@@ -283,7 +285,7 @@ describe('moduleOrchestrator service', () => {
     (Module as any).findByIdAndUpdate = async (id: string) => {
       updated.push(String(id));
     };
-    global.fetch = async () => ({ ok: true }) as any;
+    (global as any).fetch = async () => ({ ok: true }) as any;
 
     await checkModules();
 
@@ -307,7 +309,7 @@ describe('moduleOrchestrator service', () => {
     (Module as any).findByIdAndUpdate = async (id: string) => {
       processed.push(String(id));
     };
-    global.fetch = async () => ({ ok: true }) as any;
+    (global as any).fetch = async () => ({ ok: true }) as any;
 
     await checkModules();
 
@@ -322,7 +324,7 @@ describe('moduleOrchestrator service', () => {
     (Module as any).find = createFindStub(modules);
     (Module as any).findByIdAndUpdate = async () => {};
     const durations: number[] = [];
-    global.fetch = async (_: string, init: any) =>
+    (global as any).fetch = async (_: string, init: any) =>
       new Promise((resolve) => {
         const start = Date.now();
         init.signal.addEventListener('abort', () => {
@@ -344,7 +346,7 @@ describe('moduleOrchestrator service', () => {
     (Module as any).find = createFindStub(modules);
     (Module as any).findByIdAndUpdate = async () => {};
     let url: string | undefined;
-    global.fetch = async (u: string) => {
+    (global as any).fetch = async (u: string) => {
       url = u;
       return { ok: true } as any;
     };
@@ -361,7 +363,7 @@ describe('moduleOrchestrator service', () => {
     (Module as any).find = createFindStub(modules);
     (Module as any).findByIdAndUpdate = async () => {};
     const durations: number[] = [];
-    global.fetch = async (_: string, init: any) =>
+    (global as any).fetch = async (_: string, init: any) =>
       new Promise((resolve) => {
         const start = Date.now();
         init.signal.addEventListener('abort', () => {
@@ -385,7 +387,7 @@ describe('moduleOrchestrator service', () => {
     (Module as any).find = createFindStub(modules);
     (Module as any).findByIdAndUpdate = async () => {};
     let url: string | undefined;
-    global.fetch = async (u: string) => {
+    (global as any).fetch = async (u: string) => {
       url = u;
       return { ok: true } as any;
     };
@@ -410,7 +412,7 @@ describe('moduleOrchestrator service', () => {
       },
     });
     (Module as any).findByIdAndUpdate = async () => {};
-    global.fetch = async () => ({ ok: true }) as any;
+    (global as any).fetch = async () => ({ ok: true }) as any;
 
     startModuleOrchestrator({ intervalMs: 1_000, batchSize: 50 });
     await new Promise((r) => setTimeout(r, 50));
@@ -435,7 +437,7 @@ describe('moduleOrchestrator service', () => {
     (Module as any).deleteOne = async (query: any) => {
       deleted.push(String(query._id));
     };
-    global.fetch = async () => ({ ok: false }) as any;
+    (global as any).fetch = async () => ({ ok: false }) as any;
     const events: Array<{ event: string; payload: any }> = [];
     (eventBus as any).publish = async (event: string, payload: any) => {
       events.push({ event, payload });
@@ -459,7 +461,7 @@ describe('moduleOrchestrator service', () => {
     (Module as any).findByIdAndUpdate = async () => {};
     let active = 0;
     let maxActive = 0;
-    global.fetch = async () => {
+    (global as any).fetch = async () => {
       active++;
       maxActive = Math.max(maxActive, active);
       await new Promise((r) => setTimeout(r, 5));
@@ -544,5 +546,25 @@ describe('moduleOrchestrator service', () => {
       () => startModuleOrchestrator({ intervalMs: 1_000, pingPath: '' }),
       { message: 'pingPath must be a non-empty string' }
     );
+  });
+
+  it('exposes last cycle metrics via getOrchestratorMetrics', async () => {
+    const modules = [
+      { _id: '1', endpoints: { rest: 'http://m1' }, lastHandshake: new Date() },
+      { _id: '2', endpoints: { rest: 'http://m2' }, lastHandshake: new Date() },
+    ];
+    (Module as any).find = createFindStub(modules);
+    (Module as any).findByIdAndUpdate = async () => {};
+    // m1 online, m2 offline
+    (global as any).fetch = async (url: any) => ({ ok: String(url).includes('m1') }) as any;
+
+    await checkModules();
+
+    const m = getOrchestratorMetrics();
+    assert.ok(m, 'metrics should be set');
+    assert.equal(m?.online, 1);
+    assert.equal(m?.offline, 1);
+    assert.ok(typeof m?.durationMs === 'number');
+    assert.ok(typeof m?.timestamp === 'string');
   });
 });
