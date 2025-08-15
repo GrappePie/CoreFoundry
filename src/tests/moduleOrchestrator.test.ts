@@ -1,0 +1,190 @@
+import { describe, it } from 'node:test';
+import assert from 'node:assert/strict';
+import { checkModules } from '../services/moduleOrchestrator';
+import Module from '../models/Module';
+import * as eventBus from '../messaging/eventBus';
+
+const emitted: Array<{ event: string; moduleId?: string }> = [];
+(eventBus as any).publish = async (event: string, payload: any) => {
+  emitted.push({ event, moduleId: payload?.moduleId });
+};
+
+let modules: any[] = [];
+
+(Module as any).find = (filter: any = {}) => ({
+  sort: () => ({
+    limit: (l: number) =>
+      Promise.resolve(
+        modules
+          .filter((m) =>
+            (filter.deletedAt?.$exists === false ? !('deletedAt' in m) : true) &&
+            (!filter._id || Number(m._id) > Number(filter._id.$gt))
+          )
+          .sort((a, b) => String(a._id).localeCompare(String(b._id)))
+          .slice(0, l)
+      ),
+  }),
+});
+(Module as any).findByIdAndUpdate = async (id: any, update: any) => {
+  const mod = modules.find((m) => m._id === id);
+  Object.assign(mod, update);
+  return mod;
+};
+(Module as any).deleteOne = async ({ _id }: any) => {
+  const index = modules.findIndex((m) => m._id === _id);
+  if (index !== -1) modules.splice(index, 1);
+};
+
+(global as any).fetch = (url: string, { signal }: any = {}) => {
+  if (String(url).includes('m1')) {
+    return Promise.resolve({ ok: true } as any);
+  }
+  if (String(url).includes('m2')) {
+    return Promise.resolve({ ok: false } as any);
+  }
+  if (String(url).includes('m3')) {
+    return new Promise((_res, rej) => {
+      signal?.addEventListener('abort', () => {
+        const err = new Error('Aborted');
+        (err as any).name = 'AbortError';
+        rej(err);
+      });
+    });
+  }
+  return Promise.resolve({ ok: false } as any);
+};
+
+describe('moduleOrchestrator service', () => {
+  it('updates module status, prunes offline modules and emits events', async () => {
+    modules = [
+      {
+        _id: '1',
+        endpoints: { rest: 'https://m1.local/api' },
+        status: 'offline',
+      },
+      {
+        _id: '2',
+        endpoints: { rest: 'https://m2.local/api' },
+        status: 'offline',
+        lastHandshake: new Date(Date.now() - 40 * 24 * 60 * 60 * 1000),
+      },
+      {
+        _id: '3',
+        endpoints: { rest: 'https://m3.local/api' },
+        status: 'offline',
+      },
+    ];
+    emitted.length = 0;
+
+    await checkModules(30 * 24 * 60 * 60 * 1000, 50);
+    assert.equal(modules.length, 2);
+    const m1 = modules.find((m) => m._id === '1');
+    const m3 = modules.find((m) => m._id === '3');
+    assert(m1);
+    assert(m3);
+    assert.equal(m1.status, 'online');
+    assert(m1.lastHandshake instanceof Date);
+    assert.equal(m3.status, 'offline');
+
+    assert.deepEqual(
+      emitted.filter((e) => e.event !== 'orchestrator.cycle'),
+      [
+        { event: 'module.online', moduleId: '1' },
+        { event: 'module.removed', moduleId: '2' },
+      ]
+    );
+  });
+
+  it('emits module.offline when ping URL is invalid', async () => {
+    modules = [
+      {
+        _id: '4',
+        endpoints: { rest: 'invalid-url' },
+        status: 'online',
+      },
+    ];
+    emitted.length = 0;
+
+    await checkModules(undefined, 50);
+    const m4 = modules.find((m) => m._id === '4');
+    assert(m4);
+    assert.equal(m4.status, 'offline');
+    assert.deepEqual(
+      emitted.filter((e) => e.event !== 'orchestrator.cycle'),
+      [{ event: 'module.offline', moduleId: '4' }]
+    );
+  });
+
+  it('does not emit module.offline for invalid URL when already offline', async () => {
+    modules = [
+      {
+        _id: '5',
+        endpoints: { rest: 'invalid-url' },
+        status: 'offline',
+      },
+    ];
+    emitted.length = 0;
+
+    await checkModules(undefined, 50);
+    const m5 = modules.find((m) => m._id === '5');
+    assert(m5);
+    assert.equal(m5.status, 'offline');
+    assert.deepEqual(
+      emitted.filter((e) => e.event !== 'orchestrator.cycle'),
+      []
+    );
+  });
+
+  it('does not process modules with deletedAt', async () => {
+    modules = [
+      {
+        _id: '1',
+        endpoints: { rest: 'https://m1.local/api' },
+        status: 'offline',
+      },
+      {
+        _id: '2',
+        endpoints: { rest: 'https://m2.local/api' },
+        status: 'offline',
+        deletedAt: new Date(),
+      },
+    ];
+    emitted.length = 0;
+
+    await checkModules(undefined, 50);
+    const m1 = modules.find((m) => m._id === '1');
+    const m2 = modules.find((m) => m._id === '2');
+    assert(m1);
+    assert(m2);
+    assert.equal(m1.status, 'online');
+    assert.equal(m2.status, 'offline');
+    assert.equal(m2.lastHandshake, undefined);
+    assert.deepEqual(
+      emitted.filter((e) => e.event !== 'orchestrator.cycle'),
+      [{ event: 'module.online', moduleId: '1' }]
+    );
+  });
+
+  it('limits parallel pings to maxConcurrentPings', async () => {
+    modules = Array.from({ length: 20 }, (_, i) => ({
+      _id: String(i + 1),
+      endpoints: { rest: `https://m${i + 1}.local/api` },
+      status: 'offline',
+    }));
+    const originalFetch = global.fetch;
+    let active = 0;
+    let maxActive = 0;
+    (global as any).fetch = async () => {
+      active++;
+      maxActive = Math.max(maxActive, active);
+      await new Promise((r) => setTimeout(r, 10));
+      active--;
+      return { ok: true } as any;
+    };
+
+    await checkModules(undefined, undefined, 5);
+
+    assert.ok(maxActive <= 5);
+    global.fetch = originalFetch;
+  });
+});

@@ -49,7 +49,7 @@ export const handlers = {
       return res.status(401).json({ message: 'Invalid credentials.' });
     }
 
-    const token = generateToken({ userId: user._id });
+    const token = generateToken({ userId: user._id, role: user.role });
     res.status(200).json({ message: 'Login successful', token });
   },
   register: async (req: NextApiRequest, res: NextApiResponse) => {

@@ -29,6 +29,7 @@ flowchart LR
     SubscriptionService("Servicio de Suscripciones")
     ValidationService("Validación AJV")
     AuditService("Servicio de Auditoría")
+    SchemaRegistry("Schema Registry")
     WS("WebSocket / Realtime")
     subgraph Módulos
       InventoryModule("Módulo Inventario")
@@ -63,9 +64,15 @@ flowchart LR
   SubscriptionService <--> CentralDB
   CoreModule <--> ValidationService
   ValidationService <--> CentralDB
-  CoreModule <--> AuditService
-  AuditService <--> CentralDB
-  Browser <-->|WS| LB
+    CoreModule <--> AuditService
+    AuditService <--> CentralDB
+    CoreModule <--> SchemaRegistry
+    SchemaRegistry <--> InventoryModule
+    SchemaRegistry <--> SalesModule
+    SchemaRegistry <--> ProductionModule
+    SchemaRegistry <--> BillingModule
+    SchemaRegistry <--> LogisticsModule
+    Browser <-->|WS| LB
   LB <-->|WS| WS
   WS <--> CoreModule
   CoreModule <--> InventoryModule
@@ -90,6 +97,115 @@ flowchart LR
   Monitoring <--> Broker
   Monitoring <--> Cache
 ```
+
+---
+
+## 🔄 Orquestador de Módulos
+
+El orquestador verifica periódicamente los módulos registrados, actualiza su estado y
+puede eliminar los que permanezcan offline demasiado tiempo. Consulta
+[docs/module-orchestrator.md](./docs/module-orchestrator.md) para conocer las opciones de
+configuración y los eventos emitidos.
+
+---
+
+## 🧾 Contrato y Versionado de Módulos
+
+Cada módulo debe proporcionar un **manifest** JSON con metadatos clave (nombre, versión, endpoints, esquemas y eventos). El Módulo Central valida este manifest con AJV y lo almacena en un **Schema Registry** para facilitar la compatibilidad entre versiones.
+
+### Ejemplo de `module.manifest.json`
+
+```json
+{
+  "name": "inventory",
+  "version": "1.0.0",
+  "endpoints": { "rest": "https://inventory.local/api" },
+  "schemas": { "product": { "$id": "#/product", "type": "object" } },
+  "events": { "publish": ["stock.updated"], "subscribe": ["order.created"] }
+}
+```
+
+### Flujo de registro y actualización
+
+1. El módulo envía su manifest al endpoint de registro del Módulo Central.
+2. El manifest se valida con `moduleManifestSchema` mediante AJV.
+3. Si es válido, se persiste y se agrega una entrada en `manifestHistory` con la versión.
+4. Para actualizar, el módulo envía un nuevo manifest con versión incrementada y el proceso se repite.
+
+#### Ejemplo de actualización
+
+```json
+{
+  "name": "inventory",
+  "version": "1.1.0",
+  "endpoints": {
+    "rest": "https://inventory.local/api",
+    "ws": "wss://inventory.local/ws"
+  },
+  "schemas": { "product": { "$id": "#/product", "type": "object" } },
+  "dependencies": ["sales"],
+  "events": {
+    "publish": ["stock.updated"],
+    "subscribe": ["order.created"]
+  }
+}
+```
+
+### Registro y descubrimiento de módulos
+
+Los módulos se integran con el Módulo Central registrando su manifest a
+través del endpoint `POST /api/modules/register`. La respuesta incluye un
+`integrationToken` que identifica al módulo en futuras interacciones.
+
+Para consultar los módulos disponibles y su metadata básica, se expone el
+endpoint `GET /api/modules`, que devuelve un listado con todos los módulos
+registrados.
+
+### Validación y manejo de errores
+
+`validateManifest` devuelve `false` si el manifest no cumple el contrato y
+expone los detalles de validación en `validateManifest.errors`. Cada error
+incluye un `instancePath` con la ruta al campo problemático y un `message`
+legible. Se recomienda transformar estos objetos en mensajes claros antes de
+mostrarlos a los autores del módulo:
+
+```ts
+if (!validateManifest(manifest)) {
+  const msgs = (validateManifest.errors ?? []).map(
+    (e) => `${e.instancePath || e.params.missingProperty}: ${e.message}`,
+  );
+  throw new Error(`Manifest inválido:\n${msgs.join('\n')}`);
+}
+```
+
+También puede utilizarse `ajv.errorsText(validateManifest.errors)` para generar
+un resumen legible de todos los problemas detectados.
+
+## 🔍 Descubrimiento y Comunicación
+
+- **Registro inicial**: los módulos se registran vía HTTP enviando su manifest.
+- **Schema Registry**: expone los esquemas y versiones para que otros módulos puedan consultarlos.
+- **Broker de mensajes**: los eventos de negocio se publican/suscriben mediante RabbitMQ/Kafka.
+- **Endpoints HTTP**: se usan para operaciones sincrónicas declaradas en el manifest.
+- **Seguridad**: los tokens y permisos se propagan entre módulos y se auditan todas las llamadas.
+
+### Event Bus
+
+La comunicación asíncrona se realiza a través de un exchange de tipo *topic*
+llamado `core.events`. Cada servicio crea su propia cola siguiendo el patrón
+`core.events.<servicio>` y la enlaza a las claves de enrutamiento de los
+eventos que consume.
+
+Los mensajes publicados deben respetar la siguiente convención:
+
+```json
+{
+  "type": "nombre.evento",
+  "payload": { "...": "" }
+}
+```
+
+`type` describe el evento y `payload` contiene los datos asociados.
 
 ---
 
@@ -181,10 +297,11 @@ El **Módulo Central** gestiona:
 
 ## 🧩 Características Principales
 
-- 📦 **Módulo Central**: orquesta usuarios, suscripciones, módulos y conexiones.  
-- 🔗 **Conexiones Seguras**: define flujos entre módulos usando datos validados por AJV.  
-- 🧱 **Modularidad Extrema**: cada módulo dispone de su esquema, endpoints y UI propios.  
-- 🔒 **Seguridad y Auditaría**: JWT en cada request, cifrado HTTPS/WSS, logs de auditoría (acción, payload, resultado, IP, userAgent).  
+- 📦 **Módulo Central**: orquesta usuarios, suscripciones, módulos y conexiones.
+- 🔗 **Conexiones Seguras**: define flujos entre módulos usando datos validados por AJV.
+- 🧱 **Modularidad Extrema**: cada módulo dispone de su esquema, endpoints y UI propios.
+- 📄 **Manifest de Módulos**: contrato versionado con endpoints, esquemas y eventos.
+- 🔒 **Seguridad y Auditaría**: JWT en cada request, cifrado HTTPS/WSS, logs de auditoría (acción, payload, resultado, IP, userAgent).
 - 📊 **Logs TTL**: los registros de auditoría expiran automáticamente tras 30 días.  
 - 💬 **Componentes UX**: Chat en tiempo real (ChatWidget), scroll infinito (InfiniteScroller), menús de usuario (AuthMenu), formularios de auth (AuthForm).  
 - 📄 **Páginas Estáticas**: landing, privacidad, términos, perfil.
@@ -199,7 +316,7 @@ El **Módulo Central** gestiona:
 │   ├── app/               # Rutas, layouts y API routes
 │   ├── components/        # Componentes React compartidos (AuthForm, AuthMenu, ChatWidget...)
 │   ├── hooks/             # Hooks personalizados (useAuth, useModules...)
-│   ├── lib/               # Utilidades (conexión Mongo, validaciones AJV)
+│   ├── lib/               # Utilidades (conexión Mongo, manifest de módulos)
 │   ├── models/            # Esquemas Mongoose (User, Module, ModuleLink, AuditLog)
 │   └── store/             # Zustand stores
 ├── public/                # Assets estáticos
@@ -230,6 +347,23 @@ El **Módulo Central** gestiona:
 
 - `GET /api/auditLogs`         – Consultar logs de operaciones
 
+## 🔐 Política de Permisos
+
+Los módulos registrados pueden declarar un arreglo `permissions` con los scopes que tienen habilitados.
+Un middleware para todas las rutas bajo `/api` verifica que el módulo que realiza la solicitud
+esté identificado mediante el encabezado `X-Module-Id` y que posea todos los scopes indicados en
+`X-Module-Scopes`.
+
+**Ejemplo:**
+
+```http
+POST /api/auth/login
+X-Module-Id: 64fae1...
+X-Module-Scopes: auth:login
+```
+
+Consulta [docs/security.md](./docs/security.md) para más detalles sobre la configuración y uso de permisos.
+
 ---
 
 ## 🛠️ Comandos Útiles
@@ -238,6 +372,23 @@ El **Módulo Central** gestiona:
 - **Build producción**: `npm run build && npm start`  
 - **Lint**: `npm run lint`  
 - **Tests**: `npm run test`  
+- **CLI de Módulos**: `npx module-cli <comando>` – utilidades para módulos (ver [CLI de Módulos](#cli-de-módulos))
+
+## CLI de Módulos
+
+Instala la dependencia de desarrollo:
+
+```bash
+npm install --save-dev @core/module-cli
+```
+
+Comandos disponibles:
+
+```bash
+npx module-cli create <nombre>
+npx module-cli validate [directorio]
+npx module-cli test [directorio]
+```
 
 ---
 

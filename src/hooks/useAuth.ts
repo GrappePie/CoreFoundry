@@ -1,7 +1,7 @@
 'use client';
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useAuthStore } from '@/store/authStore';
+import { useAuthStore } from '../store/authStore';
 import { useRouter } from 'next/navigation';
 
 interface Credentials {
@@ -15,6 +15,7 @@ interface Credentials {
 const loginUser = async (credentials: Credentials) => {
   const res = await fetch('/api/auth/login', {
     method: 'POST',
+    credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(credentials),
   });
@@ -35,6 +36,7 @@ const loginUser = async (credentials: Credentials) => {
 const registerUser = async (credentials: Credentials) => {
   const res = await fetch('/api/auth/register', {
     method: 'POST',
+    credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(credentials),
   });
@@ -70,7 +72,7 @@ export const useAuth = () => {
       // Refresh any user-related queries
       queryClient.invalidateQueries({ queryKey: ['user'] });
       // Redirect to home page
-      router.push('/');
+      router.push('/dashboard');
     },
   });
 
@@ -80,7 +82,7 @@ export const useAuth = () => {
       const { token, user } = data;
       setAuth(token, user);
       queryClient.invalidateQueries({ queryKey: ['user'] });
-      router.push('/');
+      router.push('/dashboard');
     },
   });
 

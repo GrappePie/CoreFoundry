@@ -1,0 +1,11 @@
+{
+  "name": "example",
+  "version": "0.1.0",
+  "endpoints": {
+    "rest": "/api"
+  },
+  "events": {
+    "publish": [],
+    "subscribe": []
+  }
+}

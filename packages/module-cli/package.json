@@ -1,0 +1,10 @@
+{
+  "name": "@core/module-cli",
+  "version": "0.1.0",
+  "bin": {
+    "module-cli": "index.js"
+  },
+  "dependencies": {
+    "yargs": "^17.7.2"
+  }
+}

@@ -42,16 +42,13 @@ export async function POST(req: Request) {
       );
     }
 
-    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET!, {
-      expiresIn: '1h',
-    });
+    const token = jwt.sign({ userId: user._id, role: user.role }, process.env.JWT_SECRET!, { expiresIn: '1h' });
 
-    const userResponse = {
-      id: user._id,
-      email: user.email,
-    };
-
-    return NextResponse.json({ token, user: userResponse });
+    const userResponse = { id: user._id, email: user.email };
+    const res = NextResponse.json({ token, user: userResponse });
+    // Set role cookie for dashboard access
+    res.cookies.set('user-role', user.role, { httpOnly: true, path: '/', sameSite: 'strict' });
+    return res;
   } catch {
     return NextResponse.json(
       { message: 'An error occurred' },
