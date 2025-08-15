@@ -15,6 +15,20 @@ All notable changes to this project will be documented in this file.
 - Instrumentation to start the module orchestrator on server boot and stop it on shutdown.
 - Module orchestrator publishes `orchestrator.cycle` metrics with online/offline counts and cycle duration.
 - Dashboard views for `owner`, `admin` y `employee` que consumen `getModules` y se actualizan en tiempo real mediante eventos de módulo.
+- Health endpoints:
+  - `GET /api/health` returns aggregate status `{ status: 'ok'|'degraded'|'error', db, mq }` with HTTP `200/206/503`. MQ can be `disabled` when `RABBITMQ_DISABLED=true`.
+  - `GET /api/health/db` checks MongoDB connectivity.
+  - `GET /api/health/mq` checks RabbitMQ connectivity and asserts the default exchange.
+- Orchestrator metrics endpoint: `GET /api/orchestrator/metrics` returns `{ status: 'ok', metrics: { online, offline, durationMs, timestamp, isActive, isRunning } }` or `{ status: 'stale' }` when no cycles yet.
+- UI components:
+  - `HealthStatus` to display aggregate health (polling cada 15s).
+  - `OrchestratorMetrics` to display last orchestrator cycle metrics (polling cada 15s).
+- Orchestrator instrumentation accepts `MODULE_ORCHESTRATOR_INTERVAL_MS` to configure the cycle interval and only runs on `NEXT_RUNTIME=nodejs`.
+- Messaging helpers and infra:
+  - RabbitMQ client with retry/backoff, graceful re-init on `close/error`, disabled mode via `RABBITMQ_DISABLED`, and defaults via `RABBITMQ_URL` and `RABBITMQ_EXCHANGE` (default `modules.exchange`).
+  - `publish/subscribe` helpers with optional AJV schema validation and proper `ack/nack` handling.
+  - Event bus publishes to the default exchange and uses per-subscriber ephemeral queues with UUID (Web Crypto fallback).
+- Testing config: added `tsconfig.tests.json` to isolate test compilation.
 
 ### Changed
 - Module orchestrator now pings modules in parallel before pruning.
@@ -22,6 +36,8 @@ All notable changes to this project will be documented in this file.
 - Module orchestrator uses the logging utility instead of `console`.
 - Module orchestrator paginates using `_id` cursors instead of `skip` for improved efficiency.
 - Module orchestrator includes an `Authorization` header with the module's integration token on ping requests.
+- Health aggregate route now computes `degraded` state and maps it to HTTP `206`.
+- MongoDB connector tolerates missing `MONGODB_URI` under `NODE_ENV=test` to ease stubbing during tests, and improves cached connection/error reset.
 
 ### Fixed
 - Module orchestrator marks modules offline and skips ping when their `rest` endpoint URL is invalid.
@@ -30,6 +46,7 @@ All notable changes to this project will be documented in this file.
 - Module orchestrator sorts modules by `_id` before pagination to ensure stable ordering.
 - Module orchestrator sets `lastHandshake` when pings fail or URLs are invalid, enabling pruning of modules without previous handshakes.
 - Module orchestrator now preserves subroutes when constructing ping URLs.
+- Health endpoints return `disabled` for MQ when `RABBITMQ_DISABLED=true` instead of failing.
 
 ## [0.5.2] - 2025-08-11
 
