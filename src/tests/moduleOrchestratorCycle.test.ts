@@ -8,12 +8,9 @@ import {
 } from '../services/moduleOrchestrator';
 import * as eventBus from '../messaging/eventBus';
 
-const emitted: Array<{ event: string; moduleId: string }> = [];
-(eventBus as any).publish = async (
-  event: string,
-  payload: { moduleId: string }
-) => {
-  emitted.push({ event, moduleId: payload.moduleId });
+const emitted: Array<{ event: string; moduleId?: string }> = [];
+(eventBus as any).publish = async (event: string, payload: any) => {
+  emitted.push({ event, moduleId: payload?.moduleId });
 };
 
 const wait = (ms: number) => new Promise((res) => setTimeout(res, ms));
@@ -143,13 +140,19 @@ describe('module orchestrator cycle control', () => {
 
       await checkModules(undefined, 50);
       assert.equal(fetched[0], 'https://m1.local/api/ping');
-      assert.deepEqual(emitted, [{ event: 'module.online', moduleId: '1' }]);
+      assert.deepEqual(
+        emitted.filter((e) => e.event !== 'orchestrator.cycle'),
+        [{ event: 'module.online', moduleId: '1' }]
+      );
 
       emitted.length = 0;
       fetched.length = 0;
       await checkModules(undefined, 50);
       assert.equal(fetched[0], 'https://m1.local/api/ping');
-      assert.deepEqual(emitted, []);
+      assert.deepEqual(
+        emitted.filter((e) => e.event !== 'orchestrator.cycle'),
+        []
+      );
     } finally {
       (Module as any).find = originalFind;
       (Module as any).findByIdAndUpdate = originalFindByIdAndUpdate;
@@ -178,11 +181,17 @@ describe('module orchestrator cycle control', () => {
       (global as any).fetch = async () => ({ ok: false } as any);
 
       await checkModules(undefined, 50);
-      assert.deepEqual(emitted, [{ event: 'module.offline', moduleId: '1' }]);
+      assert.deepEqual(
+        emitted.filter((e) => e.event !== 'orchestrator.cycle'),
+        [{ event: 'module.offline', moduleId: '1' }]
+      );
 
       emitted.length = 0;
       await checkModules(undefined, 50);
-      assert.deepEqual(emitted, []);
+      assert.deepEqual(
+        emitted.filter((e) => e.event !== 'orchestrator.cycle'),
+        []
+      );
     } finally {
       (Module as any).find = originalFind;
       (Module as any).findByIdAndUpdate = originalFindByIdAndUpdate;
@@ -211,7 +220,10 @@ describe('module orchestrator cycle control', () => {
       await checkModules(1, 50);
 
       assert.deepEqual(deleted, ['1']);
-      assert.deepEqual(emitted, [{ event: 'module.removed', moduleId: '1' }]);
+      assert.deepEqual(
+        emitted.filter((e) => e.event !== 'orchestrator.cycle'),
+        [{ event: 'module.removed', moduleId: '1' }]
+      );
     } finally {
       (Module as any).find = originalFind;
       (Module as any).deleteOne = originalDeleteOne;
@@ -242,7 +254,10 @@ describe('module orchestrator cycle control', () => {
 
       assert.equal(modules[0].status, 'offline');
       assert.ok((modules[0].lastHandshake as any) instanceof Date);
-      assert.deepEqual(emitted, [{ event: 'module.offline', moduleId: '1' }]);
+      assert.deepEqual(
+        emitted.filter((e) => e.event !== 'orchestrator.cycle'),
+        [{ event: 'module.offline', moduleId: '1' }]
+      );
     } finally {
       (Module as any).find = originalFind;
       (Module as any).findByIdAndUpdate = originalFindByIdAndUpdate;

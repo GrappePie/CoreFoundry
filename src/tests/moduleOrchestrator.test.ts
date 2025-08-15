@@ -4,12 +4,9 @@ import { checkModules } from '../services/moduleOrchestrator';
 import Module from '../models/Module';
 import * as eventBus from '../messaging/eventBus';
 
-const emitted: Array<{ event: string; moduleId: string }> = [];
-(eventBus as any).publish = async (
-  event: string,
-  payload: { moduleId: string }
-) => {
-  emitted.push({ event, moduleId: payload.moduleId });
+const emitted: Array<{ event: string; moduleId?: string }> = [];
+(eventBus as any).publish = async (event: string, payload: any) => {
+  emitted.push({ event, moduleId: payload?.moduleId });
 };
 
 let modules: any[] = [];
@@ -89,10 +86,13 @@ describe('moduleOrchestrator service', () => {
     assert(m1.lastHandshake instanceof Date);
     assert.equal(m3.status, 'offline');
 
-    assert.deepEqual(emitted, [
-      { event: 'module.online', moduleId: '1' },
-      { event: 'module.removed', moduleId: '2' },
-    ]);
+    assert.deepEqual(
+      emitted.filter((e) => e.event !== 'orchestrator.cycle'),
+      [
+        { event: 'module.online', moduleId: '1' },
+        { event: 'module.removed', moduleId: '2' },
+      ]
+    );
   });
 
   it('emits module.offline when ping URL is invalid', async () => {
@@ -109,7 +109,10 @@ describe('moduleOrchestrator service', () => {
     const m4 = modules.find((m) => m._id === '4');
     assert(m4);
     assert.equal(m4.status, 'offline');
-    assert.deepEqual(emitted, [{ event: 'module.offline', moduleId: '4' }]);
+    assert.deepEqual(
+      emitted.filter((e) => e.event !== 'orchestrator.cycle'),
+      [{ event: 'module.offline', moduleId: '4' }]
+    );
   });
 
   it('does not emit module.offline for invalid URL when already offline', async () => {
@@ -126,7 +129,10 @@ describe('moduleOrchestrator service', () => {
     const m5 = modules.find((m) => m._id === '5');
     assert(m5);
     assert.equal(m5.status, 'offline');
-    assert.deepEqual(emitted, []);
+    assert.deepEqual(
+      emitted.filter((e) => e.event !== 'orchestrator.cycle'),
+      []
+    );
   });
 
   it('does not process modules with deletedAt', async () => {
@@ -153,7 +159,10 @@ describe('moduleOrchestrator service', () => {
     assert.equal(m1.status, 'online');
     assert.equal(m2.status, 'offline');
     assert.equal(m2.lastHandshake, undefined);
-    assert.deepEqual(emitted, [{ event: 'module.online', moduleId: '1' }]);
+    assert.deepEqual(
+      emitted.filter((e) => e.event !== 'orchestrator.cycle'),
+      [{ event: 'module.online', moduleId: '1' }]
+    );
   });
 
   it('limits parallel pings to maxConcurrentPings', async () => {

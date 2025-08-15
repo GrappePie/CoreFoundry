@@ -193,6 +193,28 @@ describe('moduleOrchestrator service', () => {
     assert.deepEqual(events, [{ event: 'module.removed', payload: { moduleId: '1' } }]);
   });
 
+  it('emits orchestrator.cycle with metrics', async () => {
+    const modules = [
+      { _id: '1', endpoints: { rest: 'http://m1' }, lastHandshake: new Date() },
+      { _id: '2', endpoints: { rest: 'http://m2' }, lastHandshake: new Date() },
+    ];
+    (Module as any).find = createFindStub(modules);
+    (Module as any).findByIdAndUpdate = async () => {};
+    global.fetch = async (url: string) => ({ ok: !url.includes('m2') }) as any;
+    const events: Array<{ event: string; payload: any }> = [];
+    (eventBus as any).publish = async (event: string, payload: any) => {
+      events.push({ event, payload });
+    };
+
+    await checkModules();
+
+    const metric = events.find((e) => e.event === 'orchestrator.cycle');
+    assert.ok(metric);
+    assert.equal(metric?.payload.online, 1);
+    assert.equal(metric?.payload.offline, 1);
+    assert.ok(typeof metric?.payload.durationMs === 'number');
+  });
+
   it('prunes modules without lastHandshake on the next cycle', async () => {
     const modules = [
       {

@@ -47,7 +47,10 @@ export async function checkModules(
     throw new Error('pingPath must be a non-empty string');
   }
 
-  const now = Date.now();
+  const startTime = Date.now();
+  const now = startTime;
+  let onlineCount = 0;
+  let offlineCount = 0;
 
   async function pingModule(mod: IModule): Promise<{ mod: IModule; online: boolean } | null> {
     let pingUrl: string;
@@ -71,6 +74,7 @@ export async function checkModules(
           logger.error('Failed to publish module.offline event', err);
         }
       }
+      offlineCount++;
       return null;
     }
     let online = false;
@@ -113,34 +117,36 @@ export async function checkModules(
     );
     await Promise.all(workers);
 
-    for (const result of results) {
-      if (!result) continue;
-      const { mod, online } = result;
-      if (online) {
-        const wasOnline = mod.status === 'online';
-        try {
-          await Module.findByIdAndUpdate(mod._id, {
-            status: 'online',
-            lastHandshake: new Date(),
-          });
-        } catch (err) {
-          logger.error('Failed to update module to online', mod._id, err);
-          continue;
-        }
-        logger.info(`Module ${mod._id} is online`);
-        if (!wasOnline) {
+      for (const result of results) {
+        if (!result) continue;
+        const { mod, online } = result;
+        if (online) {
+          onlineCount++;
+          const wasOnline = mod.status === 'online';
           try {
-            await eventBus.publish('module.online', { moduleId: String(mod._id) });
+            await Module.findByIdAndUpdate(mod._id, {
+              status: 'online',
+              lastHandshake: new Date(),
+            });
           } catch (err) {
-            logger.error('Failed to publish module.online event', err);
+            logger.error('Failed to update module to online', mod._id, err);
+            continue;
           }
-        }
-      } else {
-        if (
-          pruneOfflineMs &&
-          mod.lastHandshake &&
-          now - new Date(mod.lastHandshake).getTime() > pruneOfflineMs
-        ) {
+          logger.info(`Module ${mod._id} is online`);
+          if (!wasOnline) {
+            try {
+              await eventBus.publish('module.online', { moduleId: String(mod._id) });
+            } catch (err) {
+              logger.error('Failed to publish module.online event', err);
+            }
+          }
+        } else {
+          offlineCount++;
+          if (
+            pruneOfflineMs &&
+            mod.lastHandshake &&
+            now - new Date(mod.lastHandshake).getTime() > pruneOfflineMs
+          ) {
           try {
             await Module.deleteOne({ _id: mod._id });
           } catch (err) {
@@ -196,6 +202,17 @@ export async function checkModules(
     if (modules.length === 0) break;
     await processBatch(modules);
     lastId = modules[modules.length - 1]._id as Types.ObjectId;
+  }
+
+  const durationMs = Date.now() - startTime;
+  try {
+    await eventBus.publish('orchestrator.cycle', {
+      online: onlineCount,
+      offline: offlineCount,
+      durationMs,
+    });
+  } catch (err) {
+    logger.error('Failed to publish orchestrator.cycle event', err);
   }
 }
 
