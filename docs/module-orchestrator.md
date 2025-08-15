@@ -34,3 +34,4 @@ Los módulos deben validar este token antes de responder al ping.
 - `module.online` – un módulo respondió al ping y su estado cambió a `online`.
 - `module.offline` – un módulo no respondió al ping o tiene un endpoint inválido.
 - `module.removed` – se eliminó un módulo tras permanecer offline más allá de `pruneOfflineMs`.
+- `orchestrator.cycle` – al finalizar cada ciclo, publica conteos de módulos `online`, `offline` y la duración del proceso en milisegundos.
