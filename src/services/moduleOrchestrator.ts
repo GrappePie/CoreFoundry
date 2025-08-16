@@ -302,6 +302,10 @@ export function startModuleOrchestrator(options: OrchestratorOptions = {}) {
       logger.error('Module orchestration error', err);
     } finally {
       isRunning = false;
+      if (lastMetrics) {
+        lastMetrics.isRunning = isRunning;
+        lastMetrics.isActive = isActive;
+      }
       if (isActive) {
         if (timer) clearTimeout(timer);
         timer = setTimeout(run, intervalMs);

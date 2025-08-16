@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
-_No changes yet._
+- Fixed orchestrator metrics to reflect running and active state after cycles.
 
 ## [0.5.3] - 2025-08-15
 

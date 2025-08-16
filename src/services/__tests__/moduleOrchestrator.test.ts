@@ -9,6 +9,7 @@ import {
 import Module from '../../models/Module';
 import * as eventBus from '../../messaging/eventBus';
 import logger from '../../lib/logger';
+import { GET as metricsRoute } from '../../app/api/orchestrator/metrics/route';
 
 let originalFetch: typeof fetch;
 
@@ -575,5 +576,24 @@ describe('moduleOrchestrator service', () => {
     assert.equal(m?.offline, 1);
     assert.ok(typeof m?.durationMs === 'number');
     assert.ok(typeof m?.timestamp === 'string');
+  });
+
+  it('reports isRunning=false via metrics endpoint when idle', async () => {
+    const modules = [
+      { _id: '1', endpoints: { rest: 'http://m1' }, lastHandshake: new Date() },
+    ];
+    (Module as any).find = createFindStub(modules);
+    (Module as any).findByIdAndUpdate = async () => {};
+    (global as any).fetch = async () => ({ ok: true }) as any;
+
+    startModuleOrchestrator({ intervalMs: 1_000 });
+    await new Promise((r) => setTimeout(r, 100));
+
+    const res = await metricsRoute();
+    const body = await res.json();
+    assert.equal(body.status, 'ok');
+    assert.equal(body.metrics.isRunning, false);
+    assert.equal(body.metrics.isActive, true);
+    stopModuleOrchestrator();
   });
 });
