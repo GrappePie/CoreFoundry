@@ -8,6 +8,7 @@ All notable changes to this project will be documented in this file.
 - Module orchestrator skips execution when `MONGODB_URI` is missing, and instrumentation
   refrains from starting the orchestrator without it.
 - Module orchestrator can be disabled via `MODULE_ORCHESTRATOR_DISABLED`.
+- Instrumentation handles `SIGINT` and `SIGTERM` to stop the module orchestrator gracefully.
 
 ## [0.5.3] - 2025-08-15
 
