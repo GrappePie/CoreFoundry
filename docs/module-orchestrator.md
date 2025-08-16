@@ -7,7 +7,8 @@ para notificar cambios de disponibilidad.
 ## Inicio y cierre
 
 El orquestador se inicia automáticamente cuando arranca el servidor y se detiene durante el
-apagado para liberar recursos. Esta lógica se encuentra en `instrumentation.ts`.
+apagado para liberar recursos. Solo se habilita si la variable `MONGODB_URI` está definida.
+Esta lógica se encuentra en `instrumentation.ts`.
 
 Durante el registro, el campo `endpoints.rest` debe ser una URL válida; de lo contrario, el módulo será rechazado.
 

@@ -107,7 +107,7 @@ puede eliminar los que permanezcan offline demasiado tiempo. Consulta
 [docs/module-orchestrator.md](./docs/module-orchestrator.md) para conocer las opciones de
 configuración y los eventos emitidos.
 
-- Corre solo cuando `NEXT_RUNTIME=nodejs`.
+- Corre solo cuando `NEXT_RUNTIME=nodejs` y `MONGODB_URI` está configurada.
 - Intervalo configurable con `MODULE_ORCHESTRATOR_INTERVAL_MS` (ms).
 - Métricas del último ciclo disponibles en `GET /api/orchestrator/metrics`.
 
