@@ -49,6 +49,34 @@ afterEach(() => {
 });
 
 describe('moduleOrchestrator service', () => {
+  it('returns immediately when MONGODB_URI is missing outside tests', async () => {
+    const originalFind = Module.find;
+    const originalArgv = process.argv;
+    const origEnv = {
+      MONGODB_URI: process.env.MONGODB_URI,
+      NODE_ENV: process.env.NODE_ENV,
+    };
+    try {
+      delete (process.env as any).MONGODB_URI;
+      (process.env as any).NODE_ENV = 'production';
+      process.argv = ['node'];
+      let called = false;
+      (Module as any).find = () => {
+        called = true;
+        return { sort: () => ({ limit: async () => [] }) };
+      };
+      await checkModules();
+      assert.equal(called, false);
+    } finally {
+      Module.find = originalFind;
+      process.argv = originalArgv;
+      if (origEnv.MONGODB_URI)
+        (process.env as any).MONGODB_URI = origEnv.MONGODB_URI;
+      else delete (process.env as any).MONGODB_URI;
+      if (origEnv.NODE_ENV) (process.env as any).NODE_ENV = origEnv.NODE_ENV;
+      else delete (process.env as any).NODE_ENV;
+    }
+  });
   it('continues when findByIdAndUpdate fails', async () => {
     const modules = [
       { _id: '1', endpoints: { rest: 'http://m1' }, lastHandshake: new Date() },

@@ -5,6 +5,8 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 
 - Fixed orchestrator metrics to reflect running and active state after cycles.
+- Module orchestrator skips execution when `MONGODB_URI` is missing, and instrumentation
+  refrains from starting the orchestrator without it.
 
 ## [0.5.3] - 2025-08-15
 

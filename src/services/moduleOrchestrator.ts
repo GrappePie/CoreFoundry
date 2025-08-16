@@ -63,6 +63,10 @@ export async function checkModules(
   const argv = process.argv.join(' ');
   const isNodeTest = argv.includes('--test');
   const isTest = String(process.env.NODE_ENV).toLowerCase() === 'test' || isNodeTest;
+  if (!process.env.MONGODB_URI && !isTest) {
+    logger.warn('MONGODB_URI is not set; skipping module check');
+    return;
+  }
   if (process.env.MONGODB_URI) {
     try {
       await dbConnect();
