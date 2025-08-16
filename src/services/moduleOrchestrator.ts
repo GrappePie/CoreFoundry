@@ -68,11 +68,11 @@ export async function checkModules(
       await dbConnect();
     } catch (err) {
       logger.error('Failed to connect to MongoDB for module orchestration', err);
-      if (!isTest) return; // En producción, no ejecutar sin DB
+      if (!isTest) return; // En producción, no ejecutar sin DB cuando estaba configurada
     }
-  } else if (!isTest) {
-    logger.error('MONGODB_URI is not set; skipping module orchestration cycle');
-    return;
+  } else {
+    // Sin URI de Mongo, continuar: en tests se mockean operaciones de Mongoose
+    logger.warn('MONGODB_URI is not set; proceeding without DB connection');
   }
 
   const startTime = Date.now();
@@ -229,7 +229,8 @@ export async function checkModules(
       .limit(batchSize);
     if (modules.length === 0) break;
     await processBatch(modules);
-    lastId = modules[modules.length - 1]._id as Types.ObjectId;
+    // Avanzar el cursor usando el último _id del lote (ordenado ascendente)
+    lastId = (modules[modules.length - 1] as any)._id as any;
   }
 
   const durationMs = Date.now() - startTime;
