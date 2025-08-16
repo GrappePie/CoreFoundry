@@ -94,7 +94,11 @@ export async function checkModules(
       if (!mod.lastHandshake) {
         update.lastHandshake = new Date();
       }
-      await Module.findByIdAndUpdate(mod._id, update);
+      try {
+        await Module.findByIdAndUpdate(mod._id, update);
+      } catch (err) {
+        logger.error('Failed to update module status after invalid ping URL', err);
+      }
       if (!wasOffline) {
         try {
           await eventBus.publish('module.offline', { moduleId: String(mod._id) });
