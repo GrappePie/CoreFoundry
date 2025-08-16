@@ -107,6 +107,10 @@ puede eliminar los que permanezcan offline demasiado tiempo. Consulta
 [docs/module-orchestrator.md](./docs/module-orchestrator.md) para conocer las opciones de
 configuración y los eventos emitidos.
 
+- Corre solo cuando `NEXT_RUNTIME=nodejs`.
+- Intervalo configurable con `MODULE_ORCHESTRATOR_INTERVAL_MS` (ms).
+- Métricas del último ciclo disponibles en `GET /api/orchestrator/metrics`.
+
 ---
 
 ## 🧾 Contrato y Versionado de Módulos
@@ -192,20 +196,17 @@ un resumen legible de todos los problemas detectados.
 ### Event Bus
 
 La comunicación asíncrona se realiza a través de un exchange de tipo *topic*
-llamado `core.events`. Cada servicio crea su propia cola siguiendo el patrón
-`core.events.<servicio>` y la enlaza a las claves de enrutamiento de los
-eventos que consume.
+llamado `modules.exchange` (configurable con `RABBITMQ_EXCHANGE`). Cada suscriptor
+crea una cola efímera por suscriptor del estilo `<tipoEvento>.<uuid>` y la enlaza
+con la clave de enrutamiento correspondiente.
 
-Los mensajes publicados deben respetar la siguiente convención:
+- El "tipo" del evento se usa como routing key (ej. `module.online`).
+- El cuerpo del mensaje es el `payload` JSON publicado.
 
-```json
-{
-  "type": "nombre.evento",
-  "payload": { "...": "" }
-}
-```
+**Ejemplo (conceptual):**
 
-`type` describe el evento y `payload` contiene los datos asociados.
+- Routing key: `orders.created`
+- Payload (mensaje): `{ "orderId": "...", "total": 123.45 }`
 
 ---
 
@@ -238,6 +239,7 @@ El **Módulo Central** gestiona:
 - **Node.js** ≥ 20.x
 - **npm** o **Yarn**
 - **MongoDB** ≥ 6.x (local o Atlas)
+- (Opcional) **RabbitMQ** ≥ 3.x (puede desactivarse con `RABBITMQ_DISABLED=true`)
 - (Opcional) Docker y Docker Compose
 
 ---
@@ -270,6 +272,14 @@ El **Módulo Central** gestiona:
    MONGODB_URI=mongodb://localhost:27017/corefoundry
    NEXTAUTH_SECRET=tu_clave_segura
    JWT_SECRET=tu_clave_segura
+
+   # RabbitMQ (opcional)
+   RABBITMQ_URL=amqp://localhost
+   RABBITMQ_EXCHANGE=modules.exchange
+   RABBITMQ_DISABLED=false
+
+   # Orquestador
+   MODULE_ORCHESTRATOR_INTERVAL_MS=60000
    ```
 
 5. Arranca en modo desarrollo:
@@ -303,7 +313,7 @@ El **Módulo Central** gestiona:
 - 📄 **Manifest de Módulos**: contrato versionado con endpoints, esquemas y eventos.
 - 🔒 **Seguridad y Auditaría**: JWT en cada request, cifrado HTTPS/WSS, logs de auditoría (acción, payload, resultado, IP, userAgent).
 - 📊 **Logs TTL**: los registros de auditoría expiran automáticamente tras 30 días.  
-- 💬 **Componentes UX**: Chat en tiempo real (ChatWidget), scroll infinito (InfiniteScroller), menús de usuario (AuthMenu), formularios de auth (AuthForm).  
+- 💬 **Componentes UX**: Chat en tiempo real (ChatWidget), scroll infinito (InfiniteScroller), menús de usuario (AuthMenu), formularios de auth (AuthForm), estado de salud (HealthStatus) y métricas del orquestador (OrchestratorMetrics).
 - 📄 **Páginas Estáticas**: landing, privacidad, términos, perfil.
 
 ---
@@ -346,6 +356,15 @@ El **Módulo Central** gestiona:
 ### Auditoría
 
 - `GET /api/auditLogs`         – Consultar logs de operaciones
+
+### Salud y Métricas
+
+- `GET /api/health` – Estado agregado del sistema: `ok | degraded | error` con `db` y `mq`. Devuelve HTTP `200/206/503`. Cuando `RABBITMQ_DISABLED=true`, MQ figura como `disabled`.
+- `GET /api/health/db` – Verifica conectividad con MongoDB.
+- `GET /api/health/mq` – Verifica conectividad con RabbitMQ y asegura el exchange por defecto.
+- `GET /api/orchestrator/metrics` – Métricas del último ciclo del orquestador: `{ online, offline, durationMs, timestamp, isActive, isRunning }` o `status: 'stale'` si aún no hay ciclos.
+
+---
 
 ## 🔐 Política de Permisos
 
