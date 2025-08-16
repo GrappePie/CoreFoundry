@@ -21,15 +21,15 @@ describe('instrumentation', () => {
     delete process.env.NEXT_RUNTIME;
   });
 
-  it('starts orchestrator when running in node runtime', () => {
+  it('starts orchestrator when running in node runtime', async () => {
     process.env.NEXT_RUNTIME = 'nodejs';
-    register();
+    await register();
     assert.ok(started);
   });
 
-  it('does not start orchestrator in edge runtime', () => {
+  it('does not start orchestrator in edge runtime', async () => {
     process.env.NEXT_RUNTIME = 'edge';
-    register();
+    await register();
     assert.equal(started, false);
   });
 });
