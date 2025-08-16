@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getOrchestratorMetrics } from '@/services/moduleOrchestrator';
+import { getOrchestratorMetrics } from '../../../../services/moduleOrchestrator';
 
 export async function GET() {
   const metrics = getOrchestratorMetrics();
