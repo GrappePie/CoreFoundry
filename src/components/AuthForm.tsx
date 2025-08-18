@@ -1,10 +1,12 @@
 'use client';
 
 import { useAuth } from '@/hooks/useAuth';
-import { useState, FormEvent } from 'react';
+import { useState, FormEvent,  } from 'react';
+import {errorMessages} from "@/config/errorMessages";
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ArrowLeftCircle } from 'lucide-react';
+
 
 interface AuthFormProps {
   formType: 'login' | 'register';
@@ -14,16 +16,40 @@ export default function AuthForm({ formType }: AuthFormProps) {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confEmail, setConfEmail] = useState('');
+  const [confPassword, setConfPassword] = useState('');
+  const [errEmail, setErrEmail] = useState(false);
+  const [errPassword, setErrPassword] = useState(false);
   const { login, register, isPending, error } = useAuth();
 
-  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
+  function validateData() {
+
+    let error = 0;
+    if(password!==confPassword) {
+      error++;
+      setErrEmail(true)
+      console.log('password must match');
+    } if(email!==confEmail) {
+      error++;
+      setErrPassword(true)
+      console.log('email must match');
+    }
+
+    if(error===0) {
+      setErrEmail(false);
+      setErrPassword(false)
+      register({ email, password });
+    }
+  }
+
+  function handleSubmit(event: FormEvent)  {
+    event.preventDefault();
     if (formType === 'login') {
       login({ email, password });
     } else {
-      register({ email, password });
+      validateData();
     }
-  };
+  }
 
   return (
     <form
@@ -52,6 +78,26 @@ export default function AuthForm({ formType }: AuthFormProps) {
           required
         />
       </div>
+      {formType === 'login' ?"":
+        <div className="mb-4">
+          <label className="block text-gray-700 text-sm font-bold mb-2">
+            Confirmar Correo electrónico
+          </label>
+          <input
+              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+              type="email"
+              value={confEmail}
+              onChange={(e) => setConfEmail(e.target.value)}
+              required
+          />
+          {errEmail && (
+              <label className="block text-red-500 text-sm mt-4  mb-2">
+                {errorMessages.NO_MATCH_EMAIL}
+              </label>
+          )}
+        </div>
+      }
+
       <div className="mb-6">
         <label className="block text-gray-700 text-sm font-bold mb-2">
           Contraseña
@@ -63,10 +109,33 @@ export default function AuthForm({ formType }: AuthFormProps) {
           onChange={(e) => setPassword(e.target.value)}
           required
         />
+
       </div>
+      {formType === 'login' ?"":
+        <div  className="mb-6">
+          <label className="block text-gray-700 text-sm font-bold mb-2">
+            Confirmar Contraseña
+          </label>
+          <input
+              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+              type="password"
+              value={confPassword}
+              onChange={(e) => setConfPassword(e.target.value)}
+              required
+          />
+          {errPassword && (
+              <label className="block text-red-500 text-sm mt-4  mb-2">
+                {errorMessages.NO_MATCH_PASSWORD}
+              </label>
+          )}
+        </div>
+      }
+
       <div className="flex items-center justify-between">
+
         <button
-          type="submit"
+         type="submit"
+          onClick={handleSubmit}
           disabled={isPending}
           className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
         >
