@@ -189,6 +189,8 @@ un resumen legible de todos los problemas detectados.
 - **Endpoints HTTP**: se usan para operaciones sincrónicas declaradas en el manifest.
 - **Seguridad**: los tokens y permisos se propagan entre módulos y se auditan todas las llamadas.
 
+Para más detalles sobre patrones de mensajería, consulta [docs/messaging.md](./docs/messaging.md).
+
 ### Event Bus
 
 La comunicación asíncrona se realiza a través de un exchange de tipo *topic*
@@ -246,8 +248,8 @@ El **Módulo Central** gestiona:
 1. Clona este repositorio:
 
    ```bash
-   git clone https://github.com/tu-org/corefoundry.git
-   cd corefoundry
+   git clone https://github.com/GrappePie/CoreFoundry.git
+   cd CoreFoundry
    ```
 
 2. Instala las dependencias:
@@ -347,6 +349,15 @@ El **Módulo Central** gestiona:
 
 - `GET /api/auditLogs`         – Consultar logs de operaciones
 
+### Dashboard y Paneles
+
+- `GET  /dashboard`            – Panel principal (redirige según rol)
+- `GET  /dashboard/owner`      – Panel del propietario
+- `GET  /dashboard/admin`      – Panel del administrador
+- `GET  /dashboard/employee`   – Panel del empleado
+
+Para más detalles sobre el funcionamiento de los dashboards, consulta [docs/dashboard.md](./docs/dashboard.md).
+
 ## 🔐 Política de Permisos
 
 Los módulos registrados pueden declarar un arreglo `permissions` con los scopes que tienen habilitados.
@@ -390,6 +401,8 @@ npx module-cli validate [directorio]
 npx module-cli test [directorio]
 ```
 
+Para más detalles sobre el CLI de módulos, consulta [docs/module-cli.md](./docs/module-cli.md).
+
 ---
 
 ## 🚀 Despliegue con Docker (Opcional)
@@ -412,7 +425,7 @@ npx module-cli test [directorio]
 
 ## 📜 Licencia
 
-MIT © Tu Organización
+MIT © GrappePie
 
 ---
 
